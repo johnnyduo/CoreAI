@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 252 58% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 222 47% 5%;
+
+    --muted: 223 47% 12%;
+    --muted-foreground: 215.4 16.3% 75%;
+
+    --accent: 222 47% 12%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 47% 15%;
+    --input: 222 47% 15%;
+    --ring: 252 58% 56%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.2), transparent 40%), 
+                      radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.2), transparent 40%);
+    background-attachment: fixed;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-space font-medium;
+  }
+  
+  .card-glass {
+    @apply bg-gradient-card border border-[#ffffff1a] backdrop-blur-lg;
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-md bg-opacity-10 bg-white border border-[#ffffff1a];
+  }
+  
+  .token-card {
+    @apply bg-gradient-card rounded-xl border border-[#ffffff1a] p-4 backdrop-blur-md transition-all duration-300 hover:shadow-glow;
+  }
+  
+  .glow-border {
+    @apply relative;
+  }
+  
+  .glow-border:before {
+    @apply content-[''] absolute inset-0 rounded-2xl bg-gradient-nebula opacity-30 blur-sm -z-10;
+  }
+  
+  .cosmic-text {
+    @apply bg-gradient-nebula bg-clip-text text-transparent;
+  }
+  
+  .chart-container {
+    @apply bg-gradient-card rounded-xl border border-[#ffffff1a] p-4 backdrop-blur-md;
+  }
+  
+  .input-dark {
+    @apply bg-muted border-[#ffffff1a] focus:border-nebula-500 focus:ring-1 focus:ring-nebula-500;
+  }
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .container {
+    padding: 0 1rem;
+    margin: 0 auto;
+  }
+}
