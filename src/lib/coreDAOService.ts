@@ -2,6 +2,9 @@
 import { formatEther, formatUnits } from 'ethers';
 
 // Core DAO API configuration
+// NOTE: Core DAO API blocks ALL browser requests (CORS policy)
+// This affects localhost, Vercel, Netlify, and all frontend deployments
+// To use real blockchain data, you would need a backend API proxy
 const CORE_DAO_API_KEY = import.meta.env.VITE_CORE_API_KEY;
 const CORE_DAO_BASE_URL = 'https://openapi.coredao.org/api';
 
@@ -264,118 +267,28 @@ export const getTransactionReceipt = async (hash: string): Promise<any> => {
 
 /**
  * Get recent blocks and extract whale transactions
- * Now uses Vite proxy in development to bypass CORS
+ * NOTE: Core DAO API blocks ALL browser requests (CORS), so this always returns mock data
  */
 export const getRecentWhaleTransactions = async (
   minValueUSD = 50000,
   blocksToScan = 5,
   corePrice = 1.20
 ): Promise<ProcessedWhaleTransaction[]> => {
-  try {
-    console.log('Attempting to fetch whale transactions from Core DAO API...');
-    console.log('Using API base URL:', getAPIBaseURL());
-    
-    // Try to get latest block number first
-    let latestBlockNumber;
-    try {
-      latestBlockNumber = await getLatestBlockNumber();
-      console.log('Latest block number:', latestBlockNumber);
-    } catch (blockError) {
-      console.error('Failed to get latest block number:', blockError);
-      console.log('This is likely due to API limitations or network issues');
-      throw new Error('Cannot fetch latest block number');
-    }
-    
-    const whaleTransactions: ProcessedWhaleTransaction[] = [];
-    
-    // Scan recent blocks (with reduced count to avoid API limits)
-    for (let i = 0; i < Math.min(blocksToScan, 3); i++) {
-      const blockNumber = latestBlockNumber - i;
-      
-      try {
-        const block = await getBlockByNumber(blockNumber, true);
-        
-        if (!block || !block.transactions) {
-          console.log(`Block ${blockNumber} has no transactions`);
-          continue;
-        }
-        
-        console.log(`Processing block ${blockNumber} with ${Array.isArray(block.transactions) ? block.transactions.length : 'unknown'} transactions`);
-        
-        // Limit transaction processing to avoid API rate limits
-        const txsToProcess = Array.isArray(block.transactions) 
-          ? block.transactions.slice(0, 10) // Only process first 10 transactions per block
-          : [];
-        
-        for (const txHash of txsToProcess) {
-          try {
-            if (typeof txHash !== 'string') continue;
-            
-            const tx = await getTransactionByHash(txHash);
-            
-            if (!tx || !tx.value || tx.value === '0x0') {
-              continue;
-            }
-            
-            // Convert value from wei to CORE
-            const valueInCore = parseFloat(formatEther(tx.value));
-            const valueUSD = valueInCore * corePrice;
-            
-            // Only include transactions above the minimum USD threshold
-            if (valueUSD >= minValueUSD) {
-              const processedTx: ProcessedWhaleTransaction = {
-                hash: tx.hash,
-                from: tx.from,
-                to: tx.to || '',
-                value: valueInCore.toFixed(8),
-                valueUSD: valueUSD,
-                timestamp: parseInt(block.timestamp, 16),
-                blockNumber: block.number,
-                type: tx.to ? 'transfer' : 'contract',
-                tokenSymbol: 'CORE',
-                tokenName: 'Core Token',
-                gasUsed: tx.gasUsed || tx.gas,
-                gasPrice: tx.gasPrice,
-                isRealData: true
-              };
-              
-              whaleTransactions.push(processedTx);
-              console.log(`Found whale transaction: ${valueInCore.toFixed(2)} CORE ($${valueUSD.toFixed(2)})`);
-            }
-          } catch (txError) {
-            console.warn(`Error processing transaction ${txHash}:`, txError);
-            continue;
-          }
-          
-          // Add small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      } catch (blockError) {
-        console.warn(`Error processing block ${blockNumber}:`, blockError);
-        continue;
-      }
-    }
-    
-    // Sort by value descending
-    const sortedTransactions = whaleTransactions.sort((a, b) => b.valueUSD - a.valueUSD);
-    console.log(`Successfully fetched ${sortedTransactions.length} whale transactions from Core DAO API`);
-    
-    return sortedTransactions;
-    
-  } catch (error) {
-    console.error('Core DAO API failed completely:', error);
-    console.log('Returning empty array - will fallback to mock data in WhaleTracker');
-    // Return empty array to trigger fallback to mock data
-    return [];
-  }
+  // Core DAO API blocks browser requests with CORS policy
+  // This affects both localhost AND production (Vercel)
+  console.log('🚨 Core DAO API blocks all browser requests due to CORS policy');
+  console.log('📝 Returning empty array to trigger mock data fallback');
+  console.log('💡 To use real blockchain data, you would need a backend proxy server');
+  
+  return []; // Always return empty to trigger mock data fallback
 };
 
 /**
- * Get Core price - prioritize CoinGecko for CORS compatibility
+ * Get Core price - uses CoinGecko API (CORS-friendly for browsers)
  */
 export const getCorePrice = async (): Promise<number> => {
   try {
-    // Use CoinGecko API first (CORS-friendly)
+    // Use CoinGecko API (CORS-friendly, works in all browsers)
     console.log('Fetching Core price from CoinGecko...');
     const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=coredaoorg&vs_currencies=usd');
     
@@ -394,42 +307,9 @@ export const getCorePrice = async (): Promise<number> => {
     throw new Error('CoinGecko API failed');
     
   } catch (error) {
-    console.warn('CoinGecko failed, trying Core DAO API:', error);
-    
-    // Fallback to Core DAO API (may fail in localhost due to CORS)
-    try {
-      const url = createAPIRequest('last_core_price', {}, 'stats');
-      console.log('Fetching Core price from Core DAO API:', url);
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Core DAO API request failed: ${response.status} ${response.statusText}`);
-      }
-      
-      const text = await response.text();
-      
-      if (!text.trim()) {
-        throw new Error('Empty response from Core DAO API (likely CORS blocked)');
-      }
-      
-      const data = JSON.parse(text);
-      
-      if (data.status === "1" && data.result && data.result.coreusd) {
-        const price = parseFloat(data.result.coreusd);
-        if (price > 0) {
-          console.log('Successfully fetched Core price from Core DAO API:', price);
-          return price;
-        }
-      }
-      
-      throw new Error('Invalid price data format received');
-      
-    } catch (coreDAOError) {
-      console.error('Both CoinGecko and Core DAO APIs failed:', coreDAOError);
-      console.log('Using fallback price of $1.20');
-      return 1.20; // Final fallback price
-    }
+    console.warn('CoinGecko failed:', error);
+    console.log('Using fallback price of $1.20');
+    return 1.20; // Fallback price - Core DAO API also blocked by CORS
   }
 };
 

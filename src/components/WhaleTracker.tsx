@@ -525,15 +525,7 @@ const WhaleTracker = () => {
                 ) : (
                   <div className="text-xs text-amber-400 flex items-center mt-2">
                     <Info className="h-3 w-3 mr-1" />
-                    <span>
-                      {typeof window !== 'undefined' && 
-                       (window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1' ||
-                        window.location.hostname.includes('localhost'))
-                        ? 'Simulated data (localhost CORS limitation - live data available in production)'
-                        : 'Using simulated data for demonstration purposes'
-                      }
-                    </span>
+                    <span>Simulated whale data (Core DAO API blocks browser requests due to CORS policy)</span>
                   </div>
                 )}
               </div>
