@@ -93,7 +93,7 @@ const DashboardHeader = () => {
       <div className="flex items-center justify-between py-6 px-8">
         <div className="flex items-center space-x-3">
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center animate-pulse-glow">
-            <span className="font-space text-white text-2xl font-bold">A</span>
+            <span className="font-space text-white text-2xl font-bold">C</span>
           </div>
           <h1 className="text-3xl font-bold font-space cosmic-text">CoreAI</h1>
         </div>

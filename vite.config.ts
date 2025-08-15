@@ -12,6 +12,15 @@ export default defineConfig(({ mode }) => {
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      // Proxy Core DAO API requests to bypass CORS in development
+      '/api/coredao': {
+        target: 'https://openapi.coredao.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/coredao/, '/api'),
+        secure: true
+      }
+    }
   },
   plugins: [
     react(),

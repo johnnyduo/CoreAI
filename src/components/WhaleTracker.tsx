@@ -35,6 +35,14 @@ import {
   formatCoreValue,
   formatUSDValue
 } from '@/lib/coreApiService';
+import { 
+  getRecentWhaleTransactions,
+  getCorePrice,
+  formatTransactionValue,
+  formatUSDValue as formatCoreDAOUSDValue,
+  getTimeAgo,
+  ProcessedWhaleTransaction
+} from '@/lib/coreDAOService';
 import { generateWhaleAnalysis } from '@/lib/geminiService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -43,8 +51,8 @@ import { Progress } from '@/components/ui/progress';
 // Define whale transaction size categories
 type WhaleSize = 'small' | 'medium' | 'large' | 'mega';
 
-// Use Core API whale transaction type
-type WhaleTransaction = CoreWhaleTransaction;
+// Use both transaction types
+type WhaleTransaction = CoreWhaleTransaction | ProcessedWhaleTransaction;
 
 const WhaleTracker = () => {
   const [transactions, setTransactions] = useState<WhaleTransaction[]>([]);
@@ -61,8 +69,9 @@ const WhaleTracker = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [tokenInfo, setTokenInfo] = useState<any>(null);
-  // Add this state to track data source (Core API vs Mock)
-  const [isUsingCoreAPI, setIsUsingCoreAPI] = useState(false);
+  // Add this state to track data source (Core DAO API vs Mock)
+  const [isUsingRealData, setIsUsingRealData] = useState(false);
+  const [corePrice, setCorePrice] = useState(1.20);
 
   // Fetch top tokens
   useEffect(() => {
@@ -109,23 +118,44 @@ const WhaleTracker = () => {
       setError(null);
       
       try {
-        // Try to fetch from Core API first, fallback to mock data
+        // Try to fetch real data from Core DAO API first
         let whaleTransactions: WhaleTransaction[] = [];
         
         try {
-          // First try Core API for real whale data
-          whaleTransactions = await getCoreWhaleTransactions(50000, 20); // Min $50K USD, limit 20
-          setIsUsingCoreAPI(true);
+          // Get current Core price
+          const currentCorePrice = await getCorePrice();
+          setCorePrice(currentCorePrice);
           
-          // If no results from API, use mock data
-          if (whaleTransactions.length === 0) {
+          // Fetch real whale transactions from Core DAO
+          const realTransactions = await getRecentWhaleTransactions(50000, 15, currentCorePrice);
+          
+          if (realTransactions.length > 0) {
+            whaleTransactions = realTransactions;
+            setIsUsingRealData(true);
+            console.log(`Fetched ${realTransactions.length} real whale transactions from Core DAO`);
+          } else {
+            // Fallback to mock data if no real transactions found
             whaleTransactions = getMockWhaleTransactions();
-            setIsUsingCoreAPI(false);
+            setIsUsingRealData(false);
+            console.log('No real transactions found, using mock data');
           }
         } catch (apiError) {
-          console.log('Core API not available, using mock data:', apiError);
-          whaleTransactions = getMockWhaleTransactions();
-          setIsUsingCoreAPI(false);
+          console.log('Core DAO API not available, trying Core API fallback:', apiError);
+          
+          // Try Core API as secondary fallback
+          try {
+            whaleTransactions = await getCoreWhaleTransactions(50000, 20);
+            setIsUsingRealData(false);
+            
+            if (whaleTransactions.length === 0) {
+              whaleTransactions = getMockWhaleTransactions();
+              setIsUsingRealData(false);
+            }
+          } catch (coreApiError) {
+            console.log('Core API also failed, using mock data:', coreApiError);
+            whaleTransactions = getMockWhaleTransactions();
+            setIsUsingRealData(false);
+          }
         }
         
         // Filter out duplicates based on hash
@@ -486,11 +516,24 @@ const WhaleTracker = () => {
               <div>
                 <CardTitle className="text-2xl">Whale Transaction Tracker</CardTitle>
                 <CardDescription>Monitor large token movements on the Core Testnet network</CardDescription>
-                {/* Visual indicator for mock data */}
-                {!isUsingCoreAPI && (
+                {/* Visual indicator for data source */}
+                {isUsingRealData ? (
+                  <div className="text-xs text-green-400 flex items-center mt-2">
+                    <Activity className="h-3 w-3 mr-1" />
+                    <span>Live data from Core DAO blockchain</span>
+                  </div>
+                ) : (
                   <div className="text-xs text-amber-400 flex items-center mt-2">
                     <Info className="h-3 w-3 mr-1" />
-                    <span>Using simulated data for demonstration purposes</span>
+                    <span>
+                      {typeof window !== 'undefined' && 
+                       (window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname.includes('localhost'))
+                        ? 'Simulated data (localhost CORS limitation - live data available in production)'
+                        : 'Using simulated data for demonstration purposes'
+                      }
+                    </span>
                   </div>
                 )}
               </div>
@@ -671,12 +714,23 @@ const WhaleTracker = () => {
                               </Tooltip>
                             </TooltipProvider>
                           </TableCell>
-                          <TableCell className="font-medium">{formatCoreValue(tx.value)}</TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {formatUSDValue(tx.valueUSD)}
+                          <TableCell className="font-medium">
+                            {isUsingRealData && 'isRealData' in tx && tx.isRealData 
+                              ? formatTransactionValue(tx.value) 
+                              : formatCoreValue(tx.value)
+                            }
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {timeAgo(tx.timestamp) || 'Recently'}
+                            {isUsingRealData && 'isRealData' in tx && tx.isRealData 
+                              ? formatCoreDAOUSDValue(tx.valueUSD)
+                              : formatUSDValue(tx.valueUSD)
+                            }
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground">
+                            {isUsingRealData && 'isRealData' in tx && tx.isRealData 
+                              ? getTimeAgo(tx.timestamp)
+                              : (timeAgo(tx.timestamp) || 'Recently')
+                            }
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">

@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Loader2, Droplets, WalletIcon } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Loader2, Droplets, WalletIcon, Coins, DollarSign } from 'lucide-react';
 import { PieChart, Pie, Cell } from 'recharts';
 import { useBlockchain } from '@/contexts/BlockchainContext';
 import { useAccount, useBalance } from 'wagmi';
-import { formatEther } from 'ethers'; // Import formatEther directly for ethers v6
+import { formatEther, formatUnits } from 'ethers'; // Import formatEther directly for ethers v6
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,18 @@ const PortfolioOverview = () => {
   const { allocations, refreshAllocations } = useBlockchain();
   const { address, isConnected } = useAccount();
   
-  // Use wagmi's useBalance hook
-  const { data: balanceData, isLoading: isBalanceLoading } = useBalance({
+  // USDC contract address from environment
+  const USDC_CONTRACT_ADDRESS = import.meta.env.VITE_USDC_CONTRACT_ADDRESS;
+  
+  // Use wagmi's useBalance hook for CORE (native token)
+  const { data: coreBalanceData, isLoading: isCoreBalanceLoading } = useBalance({
     address: address,
+  });
+  
+  // Use wagmi's useBalance hook for USDC (ERC20 token)
+  const { data: usdcBalanceData, isLoading: isUsdcBalanceLoading } = useBalance({
+    address: address,
+    token: USDC_CONTRACT_ADDRESS as `0x${string}`,
   });
   
   const [portfolioValue, setPortfolioValue] = useState(0);
@@ -27,6 +36,7 @@ const PortfolioOverview = () => {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [corePrice, setCorePrice] = useState(1.20); // Default mock price
+  const [usdcPrice, setUsdcPrice] = useState(1.00); // USDC is pegged to $1
   
   const isPositive = portfolioChange > 0;
   
@@ -71,18 +81,26 @@ const PortfolioOverview = () => {
       return;
     }
     
-    setIsLoading(isBalanceLoading);
+    setIsLoading(isCoreBalanceLoading || isUsdcBalanceLoading);
     
-    if (balanceData) {
+    if (coreBalanceData || usdcBalanceData) {
       try {
-        // Convert balance to number using ethers v6 syntax
-        const balanceInEth = parseFloat(formatEther(balanceData.value));
+        let totalValue = 0;
         
-        // Calculate portfolio value
-        const calculatedValue = balanceInEth * corePrice;
+        // Calculate CORE value
+        if (coreBalanceData) {
+          const coreBalance = parseFloat(formatEther(coreBalanceData.value));
+          totalValue += coreBalance * corePrice;
+        }
+        
+        // Calculate USDC value
+        if (usdcBalanceData) {
+          const usdcBalance = parseFloat(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals));
+          totalValue += usdcBalance * usdcPrice;
+        }
         
         // Set portfolio value
-        setPortfolioValue(calculatedValue);
+        setPortfolioValue(totalValue);
         
         // Generate a realistic portfolio change (mock data)
         const randomChange = (Math.random() * 20) - 10; // -10% to +10%
@@ -96,7 +114,7 @@ const PortfolioOverview = () => {
         setPortfolioChange(0);
       }
     }
-  }, [balanceData, isBalanceLoading, isConnected, address, corePrice]);
+  }, [coreBalanceData, usdcBalanceData, isCoreBalanceLoading, isUsdcBalanceLoading, isConnected, address, corePrice, usdcPrice]);
   
   // Format the portfolio data from allocations
   const portfolioData = allocations.map(item => ({
@@ -117,137 +135,285 @@ const PortfolioOverview = () => {
   };
   
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-2 card-glass">
-        <CardHeader>
-          <CardTitle className="text-2xl">Portfolio Overview</CardTitle>
-          <CardDescription>Total value across all categories</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-end">
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-10 w-40 bg-cosmic-800" />
-                <div className="flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-nebula-400" />
-                  <span className="text-xs text-muted-foreground">Fetching balance...</span>
-                </div>
-              </div>
-            ) : !isConnected ? (
-              <div className="space-y-2">
-                <h2 className="text-4xl font-bold font-space">$0.00</h2>
-                <div className="flex items-center text-muted-foreground">
-                  <WalletIcon className="h-4 w-4 mr-2" />
-                  <span className="text-xs">Connect wallet to view your portfolio</span>
-                </div>
-              </div>
-            ) : (
-              <>
-                <h2 className="text-4xl font-bold font-space">${portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</h2>
-                <div className={`ml-4 flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {isPositive ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-                  <span className="font-roboto-mono font-medium">{isPositive ? '+' : ''}{portfolioChange}%</span>
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="grid grid-cols-2 gap-6">
-            {(isConnected ? portfolioData : []).map((item) => (
-              <div key={item.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{item.name}</span>
-                  <span className="font-roboto-mono">{item.value}%</span>
-                </div>
-                <Progress 
-                  value={item.value} 
-                  className="h-2" 
-                  style={{ 
-                    '--progress-background': `linear-gradient(to right, ${item.color}, ${item.color}cc)`
-                  } as React.CSSProperties}
-                />
-              </div>
-            ))}
-            
-            {!isConnected && (
-              <div className="col-span-2 flex flex-col items-center justify-center py-8">
-                <p className="text-muted-foreground mb-4">Connect your wallet to view your portfolio allocations</p>
-                <Button 
-                  variant="outline" 
-                  className="bg-nebula-600/20 hover:bg-nebula-600/30"
-                  onClick={handleConnectWallet}
-                >
-                  <WalletIcon className="h-4 w-4 mr-2" />
-                  Connect Wallet
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter>
-          <div className="text-sm text-muted-foreground font-roboto-mono">
-            Last updated: {format(lastUpdated, 'dd MMM yyyy, HH:mm')} UTC
-          </div>
-        </CardFooter>
-      </Card>
-      
-      <Card className="card-glass">
-        <CardHeader>
-          <CardTitle className="text-2xl">Portfolio Distribution</CardTitle>
-          <CardDescription>Allocation across categories</CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <div className="w-48 h-48 relative">
-            <PieChart width={200} height={200}>
-              <Pie
-                data={isConnected ? portfolioData : defaultPortfolioData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {(isConnected ? portfolioData : defaultPortfolioData).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+    <div className="space-y-6">
+      {/* Main Portfolio Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 card-glass">
+          <CardHeader>
+            <CardTitle className="text-2xl">Portfolio Overview</CardTitle>
+            <CardDescription>Total value across all categories</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-end">
               {isLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-nebula-400" />
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-40 bg-cosmic-800" />
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2 text-nebula-400" />
+                    <span className="text-xs text-muted-foreground">Fetching balance...</span>
+                  </div>
+                </div>
               ) : !isConnected ? (
-                <>
-                  <WalletIcon className="h-6 w-6 text-gray-400" />
-                  <span className="mt-1 font-roboto-mono text-sm text-gray-400">Not Connected</span>
-                </>
+                <div className="space-y-2">
+                  <h2 className="text-4xl font-bold font-space">$0.00</h2>
+                  <div className="flex items-center text-muted-foreground">
+                    <WalletIcon className="h-4 w-4 mr-2" />
+                    <span className="text-xs">Connect wallet to view your portfolio</span>
+                  </div>
+                </div>
               ) : (
                 <>
-                  <TrendingUp className="h-6 w-6 text-nebula-400" />
-                  <span className="mt-1 font-roboto-mono text-sm">Total</span>
-                  <span className="font-space font-bold">100%</span>
+                  <h2 className="text-4xl font-bold font-space">${portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</h2>
+                  <div className={`ml-4 flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    {isPositive ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                    <span className="font-roboto-mono font-medium">{isPositive ? '+' : ''}{portfolioChange}%</span>
+                  </div>
                 </>
               )}
             </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          {isConnected ? (
-            <ul className="w-full flex flex-wrap gap-2">
-              {portfolioData.map((item) => (
-                <li key={item.name} className="flex items-center">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-xs">{item.name}</span>
-                </li>
+            
+            <div className="grid grid-cols-2 gap-6">
+              {(isConnected ? portfolioData : []).map((item) => (
+                <div key={item.name} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="font-roboto-mono">{item.value}%</span>
+                  </div>
+                  <Progress 
+                    value={item.value} 
+                    className="h-2" 
+                    style={{ 
+                      '--progress-background': `linear-gradient(to right, ${item.color}, ${item.color}cc)`
+                    } as React.CSSProperties}
+                  />
+                </div>
               ))}
-            </ul>
-          ) : (
-            <div className="w-full text-center text-muted-foreground text-xs">
-              Connect your wallet to view your portfolio distribution
+              
+              {!isConnected && (
+                <div className="col-span-2 flex flex-col items-center justify-center py-8">
+                  <p className="text-muted-foreground mb-4">Connect your wallet to view your portfolio allocations</p>
+                  <Button 
+                    variant="outline" 
+                    className="bg-nebula-600/20 hover:bg-nebula-600/30"
+                    onClick={handleConnectWallet}
+                  >
+                    <WalletIcon className="h-4 w-4 mr-2" />
+                    Connect Wallet
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-        </CardFooter>
-      </Card>
+          </CardContent>
+          <CardFooter>
+            <div className="text-sm text-muted-foreground font-roboto-mono">
+              Last updated: {format(lastUpdated, 'dd MMM yyyy, HH:mm')} UTC
+            </div>
+          </CardFooter>
+        </Card>
+        
+        <Card className="card-glass">
+          <CardHeader>
+            <CardTitle className="text-2xl">Portfolio Distribution</CardTitle>
+            <CardDescription>Allocation across categories</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <div className="w-48 h-48 relative">
+              <PieChart width={200} height={200}>
+                <Pie
+                  data={isConnected ? portfolioData : defaultPortfolioData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {(isConnected ? portfolioData : defaultPortfolioData).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-nebula-400" />
+                ) : !isConnected ? (
+                  <>
+                    <WalletIcon className="h-6 w-6 text-gray-400" />
+                    <span className="mt-1 font-roboto-mono text-sm text-gray-400">Not Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="h-6 w-6 text-nebula-400" />
+                    <span className="mt-1 font-roboto-mono text-sm">Total</span>
+                    <span className="font-space font-bold">100%</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            {isConnected ? (
+              <ul className="w-full flex flex-wrap gap-2">
+                {portfolioData.map((item) => (
+                  <li key={item.name} className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-xs">{item.name}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="w-full text-center text-muted-foreground text-xs">
+                Connect your wallet to view your portfolio distribution
+              </div>
+            )}
+          </CardFooter>
+        </Card>
+      </div>
+
+      {/* Token Balance Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* CORE Balance Card */}
+        <Card className="card-glass border-cosmic-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-red-600">
+                  <Coins className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">CORE Balance</CardTitle>
+                  <CardDescription className="text-xs">Native Core Testnet Token</CardDescription>
+                </div>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                      tCORE2
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Core Testnet Native Token</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!isConnected ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <WalletIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">Connect wallet to view balance</p>
+              </div>
+            ) : isCoreBalanceLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-32 bg-cosmic-800" />
+                <Skeleton className="h-4 w-24 bg-cosmic-800" />
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-orange-400" />
+                  <span className="text-xs text-muted-foreground">Loading CORE balance...</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-end space-x-2">
+                  <h3 className="text-2xl font-bold font-space">
+                    {coreBalanceData ? parseFloat(formatEther(coreBalanceData.value)).toFixed(4) : '0.0000'}
+                  </h3>
+                  <span className="text-sm text-muted-foreground mb-1">CORE</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-roboto-mono">
+                    ≈ ${coreBalanceData ? (parseFloat(formatEther(coreBalanceData.value)) * corePrice).toFixed(2) : '0.00'} USD
+                  </div>
+                  <div className="text-xs text-orange-400">
+                    @ ${corePrice.toFixed(2)}
+                  </div>
+                </div>
+                <div className="w-full bg-cosmic-800 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full" 
+                    style={{ 
+                      width: coreBalanceData ? `${Math.min((parseFloat(formatEther(coreBalanceData.value)) / 100) * 100, 100)}%` : '0%' 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* USDC Balance Card */}
+        <Card className="card-glass border-cosmic-700">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-green-600">
+                  <DollarSign className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">USDC Balance</CardTitle>
+                  <CardDescription className="text-xs">USD Coin Stablecoin</CardDescription>
+                </div>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                      USDC
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>USD Coin - Stablecoin pegged to $1</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!isConnected ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <WalletIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">Connect wallet to view balance</p>
+              </div>
+            ) : isUsdcBalanceLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-32 bg-cosmic-800" />
+                <Skeleton className="h-4 w-24 bg-cosmic-800" />
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-green-400" />
+                  <span className="text-xs text-muted-foreground">Loading USDC balance...</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-end space-x-2">
+                  <h3 className="text-2xl font-bold font-space">
+                    {usdcBalanceData ? parseFloat(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals)).toFixed(2) : '0.00'}
+                  </h3>
+                  <span className="text-sm text-muted-foreground mb-1">USDC</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-roboto-mono">
+                    ≈ ${usdcBalanceData ? parseFloat(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals)).toFixed(2) : '0.00'} USD
+                  </div>
+                  <div className="text-xs text-green-400">
+                    @ $1.00
+                  </div>
+                </div>
+                <div className="w-full bg-cosmic-800 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-green-600 h-2 rounded-full" 
+                    style={{ 
+                      width: usdcBalanceData ? `${Math.min((parseFloat(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals)) / 1000) * 100, 100)}%` : '0%' 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
