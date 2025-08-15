@@ -37,27 +37,67 @@ CoreAI is a next-generation Web3 application that combines artificial intelligen
 
 ### 🤖 **AI-Powered Portfolio Intelligence**
 - **Natural Language Interface**: Chat with AI about your portfolio in plain English
-- **Smart Allocation Suggestions**: AI-driven rebalancing recommendations
-- **Market Sentiment Analysis**: Real-time analysis of market conditions
+- **Smart Allocation Suggestions**: AI-driven rebalancing recommendations based on market conditions
+- **Market Sentiment Analysis**: Real-time analysis of market conditions using Gemini AI
 - **Risk Assessment**: Intelligent risk profiling and mitigation strategies
+- **Token Insights Generation**: AI-powered analysis for individual tokens with technical indicators
+- **Context-Aware Responses**: Chat system with portfolio context and historical data
 
 ### 📊 **Advanced Analytics Dashboard**
-- **Real-Time Portfolio Tracking**: Live performance metrics and P&L
-- **Interactive Charts**: Recharts-powered visualizations
-- **Yield Comparison**: Cross-protocol yield optimization
-- **Token Analytics**: Deep dive into individual token performance
+- **Real-Time Portfolio Tracking**: Live performance metrics and P&L calculations
+- **Interactive Charts**: Recharts-powered visualizations with multiple timeframes
+- **Yield Comparison**: Cross-protocol yield optimization and DeFi strategy analysis
+- **Token Analytics**: Deep dive into individual token performance with AI insights
+- **Performance Metrics**: Comprehensive portfolio performance tracking with historical data
+- **Allocation Adjuster**: Dynamic portfolio rebalancing with visual feedback
 
-### 🐋 **On-Chain Intelligence**
-- **Whale Movement Tracking**: Monitor large transactions and patterns
-- **Smart Contract Interaction**: Direct blockchain portfolio management
-- **Transaction Analysis**: Pattern recognition for market insights
-- **Liquidity Monitoring**: Real-time liquidity data from Glyph Exchange V4
+### 🐋 **Advanced Whale Tracking & On-Chain Intelligence**
+- **Multi-Source Whale Monitoring**: Track large transactions across multiple data sources
+  - Core Blockchain Explorer integration
+  - Core API Service for real-time data
+  - Core DAO Service for comprehensive analytics
+- **Whale Movement Analysis**: Monitor large transactions and identify market-moving patterns
+- **AI-Powered Transaction Analysis**: Gemini AI analysis of whale movements and market impact
+- **Transaction Pattern Recognition**: Identify and analyze transaction patterns for market insights
+- **Real-Time Whale Alerts**: Live monitoring of significant transactions with instant notifications
+
+### 🔗 **BTC Staking Intelligence & Core Network Integration**
+- **Core Staking Analytics**: Real-time BTC staking data from Core DAO
+  - Total staked BTC amount tracking
+  - Active staker count monitoring
+  - Staking reward analytics
+  - Validator performance metrics
+- **AI-Powered Staking Analysis**: Gemini AI insights for BTC staking strategies
+  - Staking yield optimization recommendations
+  - Market impact analysis of staking activities
+  - Risk assessment for staking positions
+- **Core Network Metrics**: Comprehensive Core blockchain analytics
+- **Dual Bitcoin Integration**: Support for native BTC and wrapped BTC variants
+
+### 🌊 **Liquidity & DeFi Protocol Integration**
+- **Glyph Exchange V4 Integration**: Real-time liquidity data from Core Network's premier DEX
+- **Cross-Protocol Analytics**: Monitor liquidity across multiple DeFi protocols
+- **Smart Contract Interaction**: Direct blockchain portfolio management with gas optimization
+- **Yield Farming Insights**: Analyze and optimize DeFi yield farming strategies
+- **Liquidity Pool Monitoring**: Track LP positions and impermanent loss calculations
 
 ### 🔐 **Security & Privacy**
-- **Non-Custodial**: Full control of your private keys
-- **Local Processing**: Sensitive data processed client-side
-- **Audited Components**: Using battle-tested Web3 libraries
+- **Non-Custodial Architecture**: Full control of your private keys with no asset custody
+- **Local Processing**: Sensitive data processed client-side for maximum privacy
+- **Audited Components**: Using battle-tested Web3 libraries (Wagmi, Viem)
 - **Secure RPC**: Encrypted communication with blockchain nodes
+- **Smart Contract Verification**: All contracts verified on Core Testnet Explorer
+
+### 🎨 **Premium User Experience**
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Lottie Animations**: Premium animated elements for enhanced UX
+  - Anima Bot for AI assistant branding
+  - Little Power Robot for chat interactions
+  - Rainbow Cat Remix for portfolio adjustments
+  - Workplace collaboration animations
+- **Golden Theme**: Consistent premium golden color scheme throughout the application
+- **Dark Mode Support**: Seamless light/dark mode switching
+- **Interactive Components**: Modern UI with shadcn/ui component library
 
 ## 🚀 Quick Start
 
