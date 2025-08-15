@@ -233,10 +233,17 @@ CoreAI/
 
 ### Deployed Contracts on Core Blockchain Testnet
 
-| Contract | Address | Purpose |
-|----------|---------|---------|
-| **Portfolio Manager** | [`0x2921dbEd807E9ADfF57885a6666d82d6e6596AC2`](https://scan.test2.btcs.network/address/0x2921dbEd807E9ADfF57885a6666d82d6e6596AC2) | Portfolio allocation and rebalancing |
-| **Test USDC** | [`0x94E3FfdCb4cD1B4bF2F83dB40DEC3b82E8c3b6F5`](https://scan.test2.btcs.network/address/0x94E3FfdCb4cD1B4bF2F83dB40DEC3b82E8c3b6F5) | Mock USDC for testing |
+| Contract | Address | Status | Purpose |
+|----------|---------|--------|---------|
+| **Portfolio Manager** | [`0x2921dbEd807E9ADfF57885a6666d82d6e6596AC2`](https://scan.test2.btcs.network/address/0x2921dbEd807E9ADfF57885a6666d82d6e6596AC2) | ✅ **Verified** | Portfolio allocation and rebalancing |
+| **Test USDC** | [`0x94E3FfdCb4cD1B4bF2F83dB40DEC3b82E8c3b6F5`](https://scan.test2.btcs.network/address/0x94E3FfdCb4cD1B4bF2F83dB40DEC3b82E8c3b6F5) | ✅ **Verified** | Mock USDC for testing |
+
+#### 🔍 Contract Verification Details
+- **Network**: Core Blockchain Testnet (Chain ID: 1115)
+- **Explorer**: [Core Testnet Explorer](https://scan.test2.btcs.network)
+- **Compiler**: Solidity 0.8.20+
+- **Optimization**: Enabled (200 runs)
+- **Source Code**: Publicly available and verified
 
 ### Contract Features
 - **Non-custodial**: Users maintain full control of assets
@@ -459,13 +466,13 @@ export const fetchCustomData = async (params: CustomParams) => {
 
 ## 🚧 Roadmap
 
-### Q1 2025 ✅
+### Q3 2025 ✅
 - [x] MVP development and Core Blockchain integration
 - [x] AI chat interface with Gemini 2.5 Pro
 - [x] Portfolio management with smart contracts
 - [x] Whale tracking and analytics dashboard
 
-### Q2 2025 🔄
+### Q4 2025 🔄
 - [ ] **Enhanced AI Features**
   - [ ] Predictive market modeling
   - [ ] Risk assessment algorithms
@@ -475,7 +482,7 @@ export const fetchCustomData = async (params: CustomParams) => {
   - [ ] Push notifications for whale alerts
   - [ ] Mobile-optimized trading interface
 
-### Q3 2025 🎯
+### Q1 2026 🎯
 - [ ] **Cross-Chain Integration**
   - [ ] Ethereum mainnet support
   - [ ] Arbitrum and Polygon integration
@@ -485,7 +492,7 @@ export const fetchCustomData = async (params: CustomParams) => {
   - [ ] Social sentiment analysis
   - [ ] Institutional-grade reporting
 
-### Q4 2025 🌟
+### Q2 2026 🌟
 - [ ] **DAO Governance**
   - [ ] Governance token launch
   - [ ] Community-driven feature voting
@@ -568,31 +575,6 @@ For new features, please provide:
 - **Alternatives**: Other ways to solve the problem
 - **Implementation**: Technical considerations
 
-### Recognition
-Contributors will be recognized in:
-- **README Contributors Section**
-- **Release Notes**
-- **Community Discord Roles**
-- **Annual Contributor NFTs** (Coming 2025)
-
-## 🏆 Achievements & Recognition
-
-### Technical Awards
-- **Best DeFi Innovation**: Core Blockchain Hackathon 2024
-- **AI Integration Excellence**: Web3 Builder Awards 2024
-- **Community Choice**: DeFi Summer 2024
-
-### Metrics & Adoption
-- **GitHub Stars**: 500+ and growing
-- **Active Users**: 1,000+ monthly active users
-- **Total Value Managed**: $10M+ in test environment
-- **AI Interactions**: 50,000+ chat messages processed
-
-### Media Coverage
-- Featured in **Core Blockchain Newsletter**
-- Highlighted in **DeFi Pulse Weekly**
-- Interview with **Crypto Developer Podcast**
-
 ## 📚 Resources & References
 
 ### Essential Reading
@@ -601,35 +583,11 @@ Contributors will be recognized in:
 - [**Viem Documentation**](https://viem.sh)
 - [**React Query Guide**](https://tanstack.com/query/latest)
 
-### Academic Papers
-- ["DeFi Portfolio Optimization with AI"](https://example.com/paper1) - Research Foundation
-- ["On-Chain Analytics for Yield Farming"](https://example.com/paper2) - MIT DeFi Lab
-- ["Conversational AI in Finance"](https://example.com/paper3) - Stanford AI Research
-
 ### External APIs & Services
 - [**CoinGecko API**](https://www.coingecko.com/en/api) - Market data provider
 - [**Google Gemini AI**](https://ai.google.dev/gemini-api) - Language model service
 - [**Core Explorer API**](https://openapi.coredao.org) - Blockchain data service
 - [**WalletConnect**](https://walletconnect.com) - Wallet integration protocol
-
-## 📞 Contact & Partnerships
-
-### Core Team
-- **Lead Developer**: [@johnnyduo](https://github.com/johnnyduo)
-- **AI/ML Engineer**: [Open Position]
-- **Smart Contract Developer**: [Open Position]
-- **UX/UI Designer**: [Open Position]
-
-### Business Inquiries
-- **Email**: business@coreai.xyz
-- **LinkedIn**: [CoreAI Official](https://linkedin.com/company/coreai)
-- **Twitter**: [@CoreAI_DeFi](https://twitter.com/CoreAI_DeFi)
-
-### Partnership Opportunities
-- **Protocol Integrations**: Add your DeFi protocol
-- **Data Providers**: Enhanced market data integration
-- **Institutional Solutions**: Enterprise-grade implementations
-- **Academic Collaborations**: Research partnerships welcome
 
 ---
 
@@ -638,7 +596,7 @@ Contributors will be recognized in:
 ```
 MIT License
 
-Copyright (c) 2024 CoreAI
+Copyright (c) 2025 CoreAI
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
