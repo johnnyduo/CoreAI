@@ -1,5 +1,5 @@
 // src/lib/contractService.ts
-import { useContractRead, useContractWrite, useWaitForTransactionReceipt, useAccount } from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
 import { ethers, BrowserProvider, Contract } from 'ethers'; // Import from ethers v6
 import AutomatedPortfolioABI from '../abi/AutomatedPortfolio.json';
 import TestUSDCABI from '../abi/TestUSDC.json';
@@ -7,6 +7,14 @@ import TestUSDCABI from '../abi/TestUSDC.json';
 // Contract addresses from environment variables
 export const PORTFOLIO_CONTRACT_ADDRESS = (import.meta.env.VITE_PORTFOLIO_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`;
 export const USDC_CONTRACT_ADDRESS = (import.meta.env.VITE_USDC_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`;
+
+// Debug logging for contract addresses
+console.log('🔧 Contract Configuration:', {
+  portfolioContract: PORTFOLIO_CONTRACT_ADDRESS,
+  usdcContract: USDC_CONTRACT_ADDRESS,
+  isValidPortfolio: PORTFOLIO_CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000',
+  isValidUsdc: USDC_CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000'
+});
 
 // Interface for portfolio allocation
 export interface Allocation {
@@ -101,7 +109,7 @@ export const updateAllocations = async (allocations: Allocation[]) => {
 
 // Hook to read allocations from the contract
 export function usePortfolioAllocations() {
-  const { data, isLoading, isError, refetch } = useContractRead({
+  const { data, isLoading, isError, refetch } = useReadContract({
     address: PORTFOLIO_CONTRACT_ADDRESS,
     abi: AutomatedPortfolioABI,
     functionName: 'getAllocations',
@@ -141,7 +149,7 @@ export function usePortfolioAllocations() {
 export function useIsContractOwner() {
   const { address } = useAccount();
   
-  const { data, isLoading, isError } = useContractRead({
+  const { data, isLoading, isError } = useReadContract({
     address: PORTFOLIO_CONTRACT_ADDRESS,
     abi: AutomatedPortfolioABI,
     functionName: 'owner',
@@ -161,7 +169,7 @@ export function useIsContractOwner() {
   };
 }
 
-// Hook to update allocations on the contract (using wagmi)
+// Hook to update allocations on the contract (using direct ethers.js)
 export function useUpdateAllocations() {
   const { address, isConnected } = useAccount();
   const { isOwner } = useIsContractOwner();
@@ -172,13 +180,6 @@ export function useUpdateAllocations() {
     isOwner,
     contractAddress: PORTFOLIO_CONTRACT_ADDRESS
   });
-  
-  const contractWrite = useContractWrite({
-    abi: AutomatedPortfolioABI,
-    functionName: 'updateAllocations',
-  });
-
-  const { isPending, error, isSuccess, data, status } = contractWrite;
 
   const updateAllocationsFn = async (allocations: Allocation[]) => {
     console.log('updateAllocations called with:', {
@@ -186,8 +187,7 @@ export function useUpdateAllocations() {
       isConnected,
       address,
       isOwner,
-      contractAddress: PORTFOLIO_CONTRACT_ADDRESS,
-      writeAsyncExists: typeof contractWrite.writeAsync === 'function'
+      contractAddress: PORTFOLIO_CONTRACT_ADDRESS
     });
 
     // Check if wallet is connected
@@ -209,40 +209,17 @@ export function useUpdateAllocations() {
       throw new Error('You are not the owner of this contract. Only the owner can update allocations.');
     }
 
-    // Try direct ethers.js approach if wagmi's writeAsync is not available
-    if (typeof contractWrite.writeAsync !== 'function') {
-      console.log('writeAsync not available, using direct ethers.js approach');
-      return updateAllocations(allocations);
-    }
-
-    try {
-      // Map allocations to the format expected by the contract
-      const categories = allocations.map(a => a.id);
-      const percentages = allocations.map(a => BigInt(a.allocation));
-
-      console.log('Calling contract with args:', { categories, percentages });
-
-      // Call the contract using wagmi
-      const tx = await contractWrite.writeAsync({ 
-        args: [categories, percentages],
-      });
-
-      console.log('Transaction submitted:', tx);
-      return tx;
-    } catch (error) {
-      console.error('Error updating allocations with wagmi:', error);
-      // Fall back to direct ethers.js approach if wagmi fails
-      console.log('Falling back to direct ethers.js approach');
-      return updateAllocations(allocations);
-    }
+    // Use direct ethers.js approach for better reliability
+    console.log('Using direct ethers.js approach for contract interaction');
+    return updateAllocations(allocations);
   };
 
   return {
     updateAllocations: updateAllocationsFn,
-    isPending,
-    error,
-    isSuccess,
-    transaction: data,
+    isPending: false,
+    error: null,
+    isSuccess: false,
+    transaction: null,
     isOwner
   };
 }
@@ -270,50 +247,62 @@ export function getAddressExplorerUrl(address: string) {
 
 // Hook to get USDC balance
 export function useUSDCBalance(address?: string) {
-  return useContractRead({
+  return useReadContract({
     address: USDC_CONTRACT_ADDRESS,
     abi: TestUSDCABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    enabled: !!address,
+    query: {
+      enabled: !!address,
+    }
   });
 }
 
-// Hook to get USDC faucet function
+// Hook to get USDC faucet function (simplified)
 export function useUSDCFaucet() {
-  const contractWrite = useContractWrite({
-    address: USDC_CONTRACT_ADDRESS,
-    abi: TestUSDCABI,
-    functionName: 'faucet',
-  });
-
   return {
-    ...contractWrite,
-    claimUSDC: () => contractWrite.write?.(),
+    claimUSDC: async () => {
+      // Use direct ethers.js approach for better compatibility
+      if (!(window as any).ethereum) {
+        throw new Error('No Ethereum provider found. Please install MetaMask or another wallet.');
+      }
+      
+      const provider = new BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const contract = new Contract(USDC_CONTRACT_ADDRESS, TestUSDCABI, signer);
+      
+      return await contract.faucet();
+    },
   };
 }
 
 // Hook to get USDC allowance
 export function useUSDCAllowance(owner?: string, spender?: string) {
-  return useContractRead({
+  return useReadContract({
     address: USDC_CONTRACT_ADDRESS,
     abi: TestUSDCABI,
     functionName: 'allowance',
     args: owner && spender ? [owner, spender] : undefined,
-    enabled: !!(owner && spender),
+    query: {
+      enabled: !!(owner && spender),
+    }
   });
 }
 
-// Hook to approve USDC spending
+// Hook to approve USDC spending (simplified)
 export function useUSDCApprove() {
-  const contractWrite = useContractWrite({
-    address: USDC_CONTRACT_ADDRESS,
-    abi: TestUSDCABI,
-    functionName: 'approve',
-  });
-
   return {
-    ...contractWrite,
-    approve: (spender: string, amount: bigint) => contractWrite.write?.([spender, amount]),
+    approve: async (spender: string, amount: bigint) => {
+      // Use direct ethers.js approach for better compatibility
+      if (!(window as any).ethereum) {
+        throw new Error('No Ethereum provider found. Please install MetaMask or another wallet.');
+      }
+      
+      const provider = new BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const contract = new Contract(USDC_CONTRACT_ADDRESS, TestUSDCABI, signer);
+      
+      return await contract.approve(spender, amount);
+    },
   };
 }
