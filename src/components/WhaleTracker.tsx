@@ -33,7 +33,9 @@ import {
   getMockWhaleTransactions,
   WhaleTransaction as CoreWhaleTransaction,
   formatCoreValue,
-  formatUSDValue
+  formatUSDValue,
+  getBTCStakingData,
+  BTCStakingData
 } from '@/lib/coreApiService';
 import { 
   getRecentWhaleTransactions,
@@ -72,6 +74,11 @@ const WhaleTracker = () => {
   // Add this state to track data source (Core DAO API vs Mock)
   const [isUsingRealData, setIsUsingRealData] = useState(false);
   const [corePrice, setCorePrice] = useState(1.20);
+  
+  // BTC Staking state
+  const [btcStakingData, setBTCStakingData] = useState<BTCStakingData | null>(null);
+  const [isLoadingBTCStaking, setIsLoadingBTCStaking] = useState(false);
+  const [btcStakingError, setBTCStakingError] = useState<string | null>(null);
 
   // Fetch top tokens
   useEffect(() => {
@@ -86,6 +93,30 @@ const WhaleTracker = () => {
     };
     
     fetchTokens();
+  }, []);
+
+  // Fetch BTC staking data
+  useEffect(() => {
+    const fetchBTCStakingData = async () => {
+      setIsLoadingBTCStaking(true);
+      setBTCStakingError(null);
+      
+      try {
+        const stakingData = await getBTCStakingData();
+        setBTCStakingData(stakingData);
+      } catch (error) {
+        console.error('Error fetching BTC staking data:', error);
+        setBTCStakingError('Failed to fetch BTC staking data');
+      } finally {
+        setIsLoadingBTCStaking(false);
+      }
+    };
+    
+    fetchBTCStakingData();
+    
+    // Refresh BTC staking data every 10 minutes
+    const intervalId = setInterval(fetchBTCStakingData, 600000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Fetch token info when token filter changes
@@ -810,6 +841,109 @@ const WhaleTracker = () => {
             </div>
           </CardFooter>
         </Card>
+      </div>
+
+      {/* BTC Staking Analytics Section */}
+      <Card className="bg-gradient-to-br from-amber-950/20 to-orange-900/20 border-amber-500/20 card-glass">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-amber-100">
+            <Activity className="h-5 w-5 text-amber-500" />
+            Bitcoin Staking Analytics
+            <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-300 border-amber-500/30">
+              Satoshi Plus
+            </Badge>
+          </CardTitle>
+          <CardDescription className="text-amber-200/70">
+            Real-time Core DAO Bitcoin staking metrics and whale activity analysis
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingBTCStaking ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+              <span className="ml-2 text-amber-200">Loading BTC staking data...</span>
+            </div>
+          ) : btcStakingError ? (
+            <div className="text-red-400 p-4 border border-red-500/20 rounded-lg bg-red-950/20">
+              <AlertTriangle className="h-4 w-4 inline mr-2" />
+              {btcStakingError}
+            </div>
+          ) : btcStakingData ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-amber-900/30 to-yellow-900/30 p-4 rounded-lg border border-amber-500/20">
+                <div className="text-sm text-amber-300/70 mb-1">Total BTC Staked</div>
+                <div className="text-2xl font-bold text-amber-100">
+                  {btcStakingData.btcStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} BTC
+                </div>
+                <div className="text-xs text-amber-300/50">
+                  ≈ ${(btcStakingData.totalValueUSD / 1000000).toFixed(1)}M USD
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 p-4 rounded-lg border border-green-500/20">
+                <div className="text-sm text-green-300/70 mb-1">Average APY</div>
+                <div className="text-2xl font-bold text-green-100">
+                  {btcStakingData.averageAPY.toFixed(2)}%
+                </div>
+                <div className="text-xs text-green-300/50">
+                  Current yield rate
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 p-4 rounded-lg border border-blue-500/20">
+                <div className="text-sm text-blue-300/70 mb-1">Validators</div>
+                <div className="text-2xl font-bold text-blue-100">
+                  {btcStakingData.validatorCount.toLocaleString()}
+                </div>
+                <div className="text-xs text-blue-300/50">
+                  {btcStakingData.delegatorCount.toLocaleString()} delegators
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/30 p-4 rounded-lg border border-purple-500/20">
+                <div className="text-sm text-purple-300/70 mb-1">Staking Score</div>
+                <div className="text-2xl font-bold text-purple-100">
+                  {btcStakingData.stakingScore.toFixed(1)}
+                </div>
+                <div className="text-xs text-purple-300/50">
+                  Network health metric
+                </div>
+              </div>
+
+              <div className="md:col-span-2 lg:col-span-4 bg-gradient-to-br from-gray-900/50 to-slate-800/50 p-4 rounded-lg border border-gray-500/20">
+                <div className="text-sm text-gray-300 mb-3 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Staking Distribution
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">Validator Staked</div>
+                    <div className="text-lg font-semibold text-gray-100">
+                      {btcStakingData.validatorStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} BTC
+                    </div>
+                    <Progress 
+                      value={(btcStakingData.validatorStaked / btcStakingData.btcStaked) * 100} 
+                      className="mt-2 h-2 bg-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">Delegator Staked</div>
+                    <div className="text-lg font-semibold text-gray-100">
+                      {btcStakingData.delegatorStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} BTC
+                    </div>
+                    <Progress 
+                      value={(btcStakingData.delegatorStaked / btcStakingData.btcStaked) * 100} 
+                      className="mt-2 h-2 bg-gray-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
         <Card className="card-glass">
           <CardHeader>

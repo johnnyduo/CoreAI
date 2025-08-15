@@ -1,4 +1,4 @@
-import { Droplets, Plus, Bot, Menu } from 'lucide-react';
+import { Droplets, Plus, Bot, Menu, Crown, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import WalletConnect from '@/components/WalletConnect';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -91,137 +91,154 @@ const DashboardHeader = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between py-6 px-8">
-        <div className="flex items-center space-x-3">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center animate-pulse-glow">
-            <span className="font-space text-white text-2xl font-bold">C</span>
-          </div>
-          <h1 className="text-3xl font-bold font-space cosmic-text">CoreAI</h1>
-        </div>
+      {/* Golden Header Bar */}
+      <div className="relative z-20 bg-charcoal-900/80 backdrop-blur-xl border-b border-golden-border shadow-charcoal-deep">
+        {/* Golden accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-golden"></div>
         
-        <div className="hidden md:flex items-center space-x-4">
-          {/* AI Documentation Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-gradient-to-r from-nebula-600 to-nebula-400 text-white border-none hover:opacity-90"
-                  onClick={() => setShowAIDocumentation(true)}
-                >
-                  <Bot className="h-4 w-4 mr-2" />
-                  AI Docs
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Learn about our AI capabilities</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {/* Add Network Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-none hover:opacity-90"
-                  onClick={handleAddNetwork}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Network
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Add Core Testnet to MetaMask</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {/* Faucet Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white border-none hover:opacity-90"
-                  onClick={handleFaucetClick}
-                >
-                  <Droplets className="h-4 w-4 mr-2" />
-                  Faucet
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Get testnet tokens for development</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {/* Wallet Connect button */}
-          <div className="w-auto">
-            <WalletConnect />
-          </div>
-        </div>
-
-        <div className="flex md:hidden items-center space-x-4">
-          {/* Wallet Connect button always visible */}
-          <div className="w-auto">
-            <WalletConnect />
-          </div>
-
-          {/* Mobile hamburger menu */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="lg" 
-                className="p-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white border-none hover:opacity-90"
-                aria-label="Menu"
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px]">
-              <div className="flex flex-col space-y-4 mt-8">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-gradient-to-r from-nebula-600 to-nebula-400 text-white border-none hover:opacity-90"
-                  onClick={() => setShowAIDocumentation(true)}
-                >
-                  <Bot className="h-4 w-4 mr-2" />
-                  AI Docs
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-none hover:opacity-90"
-                  onClick={handleAddNetwork}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Network
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white border-none hover:opacity-90"
-                  onClick={handleFaucetClick}
-                >
-                  <Droplets className="h-4 w-4 mr-2" />
-                  Faucet
-                </Button>
+        <div className="flex items-center justify-between py-6 px-8">
+          {/* Logo Section */}
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-golden flex items-center justify-center shadow-golden-glow animate-golden-pulse">
+                <Crown className="h-7 w-7 text-charcoal-900" />
               </div>
-            </SheetContent>
-          </Sheet>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gold-400 rounded-full flex items-center justify-center">
+                <Zap className="h-2 w-2 text-charcoal-900" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-4xl font-playfair font-bold golden-text">CoreAI</h1>
+              <p className="text-xs font-inter text-gold-300/60 mt-1">Premium DeFi Portfolio Navigator</p>
+            </div>
+          </div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-3">
+            {/* AI Documentation Button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-charcoal-800/60 backdrop-blur-xl border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 hover:shadow-golden-glow hover:scale-105 font-inter"
+                    onClick={() => setShowAIDocumentation(true)}
+                  >
+                    <Bot className="h-4 w-4 mr-2" />
+                    AI Docs
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-charcoal-800 border-golden-border text-gold-200">
+                  <p>Learn about our AI capabilities</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Add Network Button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-charcoal-800/60 backdrop-blur-xl border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 hover:shadow-golden-glow hover:scale-105 font-inter"
+                    onClick={handleAddNetwork}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Network
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-charcoal-800 border-golden-border text-gold-200">
+                  <p>Add Core Testnet to MetaMask</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Faucet Button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-charcoal-800/60 backdrop-blur-xl border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 hover:shadow-golden-glow hover:scale-105 font-inter"
+                    onClick={handleFaucetClick}
+                  >
+                    <Droplets className="h-4 w-4 mr-2" />
+                    Faucet
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-charcoal-800 border-golden-border text-gold-200">
+                  <p>Get testnet tokens for development</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Wallet Connect button */}
+            <div className="ml-4">
+              <WalletConnect />
+            </div>
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center space-x-3">
+            {/* Wallet Connect button always visible */}
+            <div>
+              <WalletConnect />
+            </div>
+
+            {/* Mobile hamburger menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="lg" 
+                  className="p-3 bg-charcoal-800/60 backdrop-blur-xl border border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300"
+                  aria-label="Menu"
+                >
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] bg-charcoal-900/95 backdrop-blur-xl border-golden-border">
+                <div className="flex flex-col space-y-4 mt-8">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-charcoal-800/60 backdrop-blur-xl border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 font-inter justify-start"
+                    onClick={() => setShowAIDocumentation(true)}
+                  >
+                    <Bot className="h-4 w-4 mr-2" />
+                    AI Documentation
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-charcoal-800/60 backdrop-blur-xl border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 font-inter justify-start"
+                    onClick={handleAddNetwork}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Network
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-charcoal-800/60 backdrop-blur-xl border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 font-inter justify-start"
+                    onClick={handleFaucetClick}
+                  >
+                    <Droplets className="h-4 w-4 mr-2" />
+                    Get Faucet Tokens
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
 
       {/* AI Documentation Modal */}
       <Dialog open={showAIDocumentation} onOpenChange={setShowAIDocumentation}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-4 md:p-6 bg-charcoal-900/95 backdrop-blur-xl border-golden-border">
           <VisuallyHidden>
             <DialogTitle>AI System Documentation</DialogTitle>
           </VisuallyHidden>

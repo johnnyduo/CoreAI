@@ -44,13 +44,16 @@ interface Token {
 }
 
 const categoryColors: { [key: string]: string } = {
-  meme: '#EC4899',     // Pink
-  rwa: '#0EA5E9',      // Blue
-  bigcap: '#10B981',   // Green
-  defi: '#F97316',     // Orange
-  l1: '#8B5CF6',       // Purple
-  stablecoin: '#14B8A6', // Teal
-  ai: '#D946EF'        // Magenta
+  meme: '#FFD700',     // Gold
+  rwa: '#DAA520',      // Dark goldenrod
+  bigcap: '#B8860B',   // Dark goldenrod
+  defi: '#FFA500',     // Orange gold
+  stablecoin: '#F4A460', // Sandy brown gold
+  gaming: '#CD853F',   // Peru gold
+  ai: '#D2691E',       // Chocolate gold
+  social: '#DEB887',   // Burlywood
+  infrastructure: '#BC8F8F', // Rosy brown
+  all: '#FFD700'       // Gold
 };
 
 // Updated token data based on the provided list - USDC prioritized for portfolio management
@@ -384,39 +387,40 @@ const TokenTable = ({ category = "all" }: { category?: string }) => {
     
     return (
       <>
-        <Card className="card-glass">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="card-glass hover:shadow-golden-glow transition-all duration-500">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-golden-border/30 pb-6">
             <div>
-              <CardTitle className="text-2xl">{getCategoryTitle()}</CardTitle>
+              <CardTitle className="text-3xl font-playfair golden-text">{getCategoryTitle()}</CardTitle>
               {isGeminiEnabled && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-sm text-gold-200/60 mt-2 font-inter">
                   Click on any token to view AI-powered insights
                 </p>
               )}
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-3">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>{getLastUpdatedText()}</span>
+                      <div className="flex items-center text-sm text-gold-300/70 bg-charcoal-800/40 px-3 py-2 rounded-lg border border-golden-border/20">
+                        <Clock className="h-4 w-4 mr-2" />
+                        <span className="font-jetbrains">{getLastUpdatedText()}</span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="bg-charcoal-800 border-golden-border text-gold-200">
                       <p>Last updated: {lastUpdated?.toLocaleString() || 'Never'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <span className="text-xs">Auto</span>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gold-200 font-inter">Auto Refresh</span>
                 <Switch 
                   checked={autoRefreshEnabled} 
                   onCheckedChange={toggleAutoRefresh} 
                   aria-label="Toggle auto-refresh"
+                  className="data-[state=checked]:bg-gradient-golden"
                 />
               </div>
               
@@ -425,24 +429,25 @@ const TokenTable = ({ category = "all" }: { category?: string }) => {
                 size="sm" 
                 onClick={() => refreshTokenData(true)} 
                 disabled={isLoading}
+                className="bg-charcoal-800/60 border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 hover:shadow-golden-glow hover:scale-105 font-inter"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 {isLoading ? 'Updating...' : 'Refresh'}
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-md overflow-auto">
+          <CardContent className="p-0">
+            <div className="rounded-lg overflow-hidden border border-golden-border/20">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[150px]">Name</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
+                <TableHeader className="bg-charcoal-800/40">
+                  <TableRow className="border-golden-border/20 hover:bg-charcoal-700/30">
+                    <TableHead className="w-[180px] text-gold-200 font-inter font-semibold py-4">Token</TableHead>
+                    <TableHead className="text-right text-gold-200 font-inter font-semibold">Price</TableHead>
                     <TableHead className="text-right">
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="font-medium p-0" 
+                        className="font-inter font-semibold p-0 text-gold-200 hover:text-gold-100 hover:bg-transparent" 
                         onClick={() => handleSort('change24h')}
                         aria-sort={sortField === 'change24h' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >

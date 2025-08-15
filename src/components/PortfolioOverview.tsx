@@ -45,23 +45,44 @@ const PortfolioOverview = () => {
     refreshAllocations();
   }, [refreshAllocations]);
   
-  // Fetch Core price from CoinGecko (as fallback) or Core API
+  // Fetch Core price from Core DAO official API
   useEffect(() => {
     const fetchCorePrice = async () => {
       try {
-        // Try Core DAO API first (if we had proper API key)
-        // For now, use CoinGecko as fallback for Core token price
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=coredaoorg&vs_currencies=usd');
-        const data = await response.json();
-        if (data && data.coredaoorg && data.coredaoorg.usd) {
-          setCorePrice(data.coredaoorg.usd);
+        const requestOptions = {
+          method: "GET",
+          redirect: "follow" as RequestRedirect
+        };
+
+        const response = await fetch("https://openapi.coredao.org/api/stats/last_core_price", requestOptions);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.status === "1" && result.result && result.result.coreusd) {
+          setCorePrice(parseFloat(result.result.coreusd));
+          console.log('Core price updated:', result.result.coreusd);
         } else {
-          // Fallback to default price if API fails
-          console.log('Using fallback Core price');
+          throw new Error(`API error: ${result.message || 'Unknown error'}`);
         }
       } catch (error) {
-        console.error('Error fetching Core price:', error);
-        // Continue with mock price
+        console.error('Error fetching Core price from official API:', error);
+        
+        // Fallback to CoinGecko if Core API fails
+        try {
+          const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=coredaoorg&vs_currencies=usd');
+          const data = await response.json();
+          if (data && data.coredaoorg && data.coredaoorg.usd) {
+            setCorePrice(data.coredaoorg.usd);
+            console.log('Using CoinGecko fallback price:', data.coredaoorg.usd);
+          }
+        } catch (fallbackError) {
+          console.error('Fallback price fetch also failed:', fallbackError);
+          // Keep default price
+        }
       }
     };
     
@@ -135,97 +156,120 @@ const PortfolioOverview = () => {
   };
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Main Portfolio Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 card-glass">
-          <CardHeader>
-            <CardTitle className="text-2xl">Portfolio Overview</CardTitle>
-            <CardDescription>Total value across all categories</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2 card-glass hover:shadow-golden-glow transition-all duration-500">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-3xl font-playfair golden-text">Portfolio Overview</CardTitle>
+            <CardDescription className="text-gold-200/70 font-inter">Total value across all Core DeFi categories</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8">
             <div className="flex items-end">
               {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-10 w-40 bg-cosmic-800" />
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-48 bg-charcoal-700 rounded-xl" />
                   <div className="flex items-center">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2 text-nebula-400" />
-                    <span className="text-xs text-muted-foreground">Fetching balance...</span>
+                    <Loader2 className="h-5 w-5 animate-spin mr-3 text-gold-400" />
+                    <span className="text-sm text-gold-300/60 font-inter">Fetching portfolio data...</span>
                   </div>
                 </div>
               ) : !isConnected ? (
-                <div className="space-y-2">
-                  <h2 className="text-4xl font-bold font-space">$0.00</h2>
-                  <div className="flex items-center text-muted-foreground">
-                    <WalletIcon className="h-4 w-4 mr-2" />
-                    <span className="text-xs">Connect wallet to view your portfolio</span>
+                <div className="space-y-3">
+                  <h2 className="text-5xl font-playfair font-bold golden-text">$0.00</h2>
+                  <div className="flex items-center text-gold-200/60">
+                    <WalletIcon className="h-5 w-5 mr-3" />
+                    <span className="text-sm font-inter">Connect wallet to view your portfolio</span>
                   </div>
                 </div>
               ) : (
                 <>
-                  <h2 className="text-4xl font-bold font-space">${portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</h2>
-                  <div className={`ml-4 flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                    {isPositive ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-                    <span className="font-roboto-mono font-medium">{isPositive ? '+' : ''}{portfolioChange}%</span>
+                  <h2 className="text-5xl font-playfair font-bold golden-text">${portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</h2>
+                  <div className={`ml-6 flex items-center ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    {isPositive ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
+                    <span className="font-jetbrains font-medium text-lg">{isPositive ? '+' : ''}{portfolioChange}%</span>
                   </div>
                 </>
               )}
             </div>
             
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-8">
               {(isConnected ? portfolioData : []).map((item) => (
-                <div key={item.name} className="space-y-2">
+                <div key={item.name} className="space-y-4 group">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="font-roboto-mono">{item.value}%</span>
+                    <span className="font-inter font-medium text-gold-200 group-hover:text-gold-100 transition-colors duration-300">{item.name}</span>
+                    <span className="font-jetbrains text-gold-300 group-hover:text-gold-200 transition-colors duration-300">{item.value}%</span>
                   </div>
-                  <Progress 
-                    value={item.value} 
-                    className="h-2" 
-                    style={{ 
-                      '--progress-background': `linear-gradient(to right, ${item.color}, ${item.color}cc)`
-                    } as React.CSSProperties}
-                  />
+                  
+                  {/* Custom Enhanced Progress Bar */}
+                  <div className="relative">
+                    <div className="h-4 w-full bg-charcoal-700/60 rounded-full border-2 border-golden-border shadow-inner overflow-hidden">
+                      <div 
+                        className="h-full rounded-full relative overflow-hidden transition-all duration-700 ease-out"
+                        style={{ 
+                          width: `${item.value}%`,
+                          background: `linear-gradient(135deg, ${item.color}, ${item.color}cc, ${item.color}99)`
+                        }}
+                      >
+                        {/* Golden shimmer overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gold-200/20 to-transparent animate-shimmer bg-[length:200%_100%]"></div>
+                        
+                        {/* Inner highlight */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-full"></div>
+                        
+                        {/* End cap glow */}
+                        <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-l from-gold-300/40 to-transparent"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Outer golden glow effect */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-gold-400/15 via-gold-500/20 to-gold-600/15 rounded-full blur-sm opacity-60 -z-10 group-hover:opacity-80 transition-opacity duration-300"></div>
+                  </div>
                 </div>
               ))}
               
               {!isConnected && (
-                <div className="col-span-2 flex flex-col items-center justify-center py-8">
-                  <p className="text-muted-foreground mb-4">Connect your wallet to view your portfolio allocations</p>
-                  <Button 
-                    variant="outline" 
-                    className="bg-nebula-600/20 hover:bg-nebula-600/30"
-                    onClick={handleConnectWallet}
-                  >
-                    <WalletIcon className="h-4 w-4 mr-2" />
+                <div className="col-span-2 flex flex-col items-center justify-center py-12">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-golden rounded-2xl flex items-center justify-center mx-auto shadow-golden-glow">
+                      <WalletIcon className="h-8 w-8 text-charcoal-900" />
+                    </div>
+                    <p className="text-gold-200/70 font-inter text-lg">Connect your wallet to view your portfolio allocations</p>
+                    <Button 
+                      variant="outline" 
+                      className="bg-charcoal-800/60 border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 hover:shadow-golden-glow hover:scale-105 font-inter px-6 py-3"
+                      onClick={handleConnectWallet}
+                    >
+                      <WalletIcon className="h-5 w-5 mr-2" />
                     Connect Wallet
                   </Button>
+                  </div>
                 </div>
               )}
             </div>
           </CardContent>
-          <CardFooter>
-            <div className="text-sm text-muted-foreground font-roboto-mono">
+          <CardFooter className="border-t border-golden-border/30 pt-4">
+            <div className="text-sm text-gold-300/60 font-jetbrains">
               Last updated: {format(lastUpdated, 'dd MMM yyyy, HH:mm')} UTC
             </div>
           </CardFooter>
         </Card>
         
-        <Card className="card-glass">
-          <CardHeader>
-            <CardTitle className="text-2xl">Portfolio Distribution</CardTitle>
-            <CardDescription>Allocation across categories</CardDescription>
+        <Card className="card-glass hover:shadow-golden-glow transition-all duration-500">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-2xl font-playfair golden-text">Portfolio Distribution</CardTitle>
+            <CardDescription className="text-gold-200/70 font-inter">Allocation across DeFi categories</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <div className="w-48 h-48 relative">
-              <PieChart width={200} height={200}>
+            <div className="w-52 h-52 relative">
+              <PieChart width={210} height={210}>
                 <Pie
                   data={isConnected ? portfolioData : defaultPortfolioData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={70}
+                  outerRadius={90}
+                  paddingAngle={3}
                   dataKey="value"
                 >
                   {(isConnected ? portfolioData : defaultPortfolioData).map((entry, index) => (
@@ -235,15 +279,15 @@ const PortfolioOverview = () => {
               </PieChart>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 {isLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-nebula-400" />
+                  <Loader2 className="h-7 w-7 animate-spin text-gold-400" />
                 ) : !isConnected ? (
                   <>
-                    <WalletIcon className="h-6 w-6 text-gray-400" />
-                    <span className="mt-1 font-roboto-mono text-sm text-gray-400">Not Connected</span>
+                    <WalletIcon className="h-7 w-7 text-gold-300/60" />
+                    <span className="mt-2 font-jetbrains text-sm text-gold-300/60">Not Connected</span>
                   </>
                 ) : (
                   <>
-                    <TrendingUp className="h-6 w-6 text-nebula-400" />
+                    <TrendingUp className="h-7 w-7 text-gold-400" />
                     <span className="mt-1 font-roboto-mono text-sm">Total</span>
                     <span className="font-space font-bold">100%</span>
                   </>

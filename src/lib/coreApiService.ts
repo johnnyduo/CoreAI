@@ -5,8 +5,49 @@ import axios from 'axios';
 const CORE_API_KEY = import.meta.env.VITE_CORE_API_KEY;
 const CORE_MAINNET_API_URL = 'https://api.coredao.org/api';
 const CORE_TESTNET_API_URL = 'https://api.test2.btcs.network/api';
+const CORE_PRICE_API_URL = 'https://openapi.coredao.org/api';
 
 // Types for Core API responses
+export interface CorePriceResponse {
+  status: string;
+  result: {
+    corebtc: string;
+    corebtc_timestamp: string;
+    coreusd: string;
+    coreusd_timestamp: string;
+  };
+  message: string;
+}
+
+// BTC Staking API Types
+export interface BTCStakingResponse {
+  code: number;
+  data: {
+    btcStaked: string;
+    stakingScore: string;
+    power: string;
+    totalReward: string;
+    validators: number;
+    delegators: number;
+    validatorStaked: string;
+    delegatorStaked: string;
+    avgAPY: string;
+  };
+  msg: string;
+}
+
+export interface BTCStakingData {
+  btcStaked: number;
+  stakingScore: number;
+  totalPower: number;
+  totalReward: number;
+  validatorCount: number;
+  delegatorCount: number;
+  validatorStaked: number;
+  delegatorStaked: number;
+  averageAPY: number;
+  totalValueUSD: number;
+}
 export interface CoreTransaction {
   blockNumber: string;
   timeStamp: string;
@@ -66,6 +107,44 @@ const createApiRequest = (endpoint: string, params: Record<string, any> = {}, us
   });
   
   return `${baseUrl}/${endpoint}?${searchParams.toString()}`;
+};
+
+/**
+ * Get latest Core price from official API
+ */
+export const getCorePrice = async (): Promise<{ usd: number; btc: number; timestamp: number }> => {
+  try {
+    const requestOptions: RequestInit = {
+      method: "GET",
+      redirect: "follow"
+    };
+
+    const response = await fetch(`${CORE_PRICE_API_URL}/stats/last_core_price`, requestOptions);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data: CorePriceResponse = await response.json();
+    
+    if (data.status === "1" && data.result) {
+      return {
+        usd: parseFloat(data.result.coreusd),
+        btc: parseFloat(data.result.corebtc),
+        timestamp: parseInt(data.result.coreusd_timestamp)
+      };
+    } else {
+      throw new Error(`API error: ${data.message || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Error fetching Core price from official API:', error);
+    // Return fallback values
+    return {
+      usd: 1.20,
+      btc: 0.000004,
+      timestamp: Date.now()
+    };
+  }
 };
 
 /**
@@ -274,6 +353,49 @@ export const getMockWhaleTransactions = (): WhaleTransaction[] => {
       tokenName: 'Core Token',
       gasUsed: '150000',
       gasPrice: '22000000000'
+    },
+    // BTC Staking Transactions via Satoshi Plus
+    {
+      hash: '0xbtc1234567890abcdef1234567890abcdef123456',
+      from: '0x1A2B3C4D5E6F7890ABCDEF1234567890ABCDEF12',
+      to: '0x0000000000000000000000000000000000000001', // Staking contract
+      value: '1000000000000000000000', // 1000 BTC worth in CORE equivalent
+      valueUSD: 65000000, // ~$65M BTC staking
+      timestamp: now - 450000,
+      blockNumber: '25123450',
+      type: 'contract',
+      tokenSymbol: 'BTC',
+      tokenName: 'Bitcoin (Staked)',
+      gasUsed: '180000',
+      gasPrice: '25000000000'
+    },
+    {
+      hash: '0xbtc2abcdef1234567890abcdef1234567890abcdef',
+      from: '0x9F8E7D6C5B4A39281726354ABCDEF1234567890A',
+      to: '0x0000000000000000000000000000000000000001', // Staking contract
+      value: '500000000000000000000', // 500 BTC worth in CORE equivalent
+      valueUSD: 32500000, // ~$32.5M BTC staking
+      timestamp: now - 750000,
+      blockNumber: '25123435',
+      type: 'contract',
+      tokenSymbol: 'BTC',
+      tokenName: 'Bitcoin (Staked)',
+      gasUsed: '160000',
+      gasPrice: '23000000000'
+    },
+    {
+      hash: '0xbtc3fedcba0987654321fedcba0987654321fedcba',
+      from: '0x0000000000000000000000000000000000000001', // Staking rewards
+      to: '0x1A2B3C4D5E6F7890ABCDEF1234567890ABCDEF12',
+      value: '50000000000000000000', // 50 BTC rewards
+      valueUSD: 3250000, // ~$3.25M BTC rewards
+      timestamp: now - 1200000,
+      blockNumber: '25123420',
+      type: 'internal',
+      tokenSymbol: 'BTC',
+      tokenName: 'Bitcoin (Rewards)',
+      gasUsed: '95000',
+      gasPrice: '20000000000'
     }
   ];
 };
@@ -291,6 +413,63 @@ export const formatCoreValue = (valueWei: string): string => {
     return `${(valueETH / 1000).toFixed(2)}K CORE`;
   } else {
     return `${valueETH.toFixed(4)} CORE`;
+  }
+};
+
+/**
+ * Get BTC staking summary from Core DAO API
+ */
+export const getBTCStakingData = async (): Promise<BTCStakingData> => {
+  try {
+    const requestOptions: RequestInit = {
+      method: "GET",
+      redirect: "follow"
+    };
+
+    const response = await fetch("https://staking-api.coredao.org/staking/summary/overall", requestOptions);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result: BTCStakingResponse = await response.json();
+    
+    if (result.code === 200 && result.data) {
+      const data = result.data;
+      
+      // Get current BTC price to calculate USD values
+      const btcPrice = 65000; // You can integrate with a BTC price API
+      
+      return {
+        btcStaked: parseFloat(data.btcStaked),
+        stakingScore: parseFloat(data.stakingScore),
+        totalPower: parseFloat(data.power),
+        totalReward: parseFloat(data.totalReward),
+        validatorCount: data.validators,
+        delegatorCount: data.delegators,
+        validatorStaked: parseFloat(data.validatorStaked),
+        delegatorStaked: parseFloat(data.delegatorStaked),
+        averageAPY: parseFloat(data.avgAPY),
+        totalValueUSD: parseFloat(data.btcStaked) * btcPrice
+      };
+    } else {
+      throw new Error(`API error: ${result.msg || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Error fetching BTC staking data:', error);
+    // Return mock data as fallback
+    return {
+      btcStaked: 4250.75,
+      stakingScore: 89.5,
+      totalPower: 156789.25,
+      totalReward: 892.33,
+      validatorCount: 45,
+      delegatorCount: 2834,
+      validatorStaked: 3850.50,
+      delegatorStaked: 400.25,
+      averageAPY: 12.75,
+      totalValueUSD: 4250.75 * 65000
+    };
   }
 };
 

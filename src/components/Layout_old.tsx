@@ -114,4 +114,38 @@ const Layout = ({ children }: LayoutProps) => {
   );
 };
 
+export default Layout; 
+                className="flex items-center px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-nebula-600 data-[state=active]:to-nebula-400 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                <span>Settings</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <TabsContent value="dashboard" className="mt-0 outline-none">
+            {children}
+          </TabsContent>
+          
+          <TabsContent value="whales" className="mt-0 outline-none">
+            <WhaleTracker />
+          </TabsContent>
+          
+          <TabsContent value="chat" className="mt-0 outline-none">
+            <div className="max-w-4xl mx-auto">
+              <AIChat />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="settings" className="mt-0 outline-none">
+            <div className="max-w-4xl mx-auto">
+              <AllocationAdjuster />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+};
+
 export default Layout;
