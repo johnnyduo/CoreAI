@@ -51,7 +51,7 @@ const WhaleTracker = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<WhaleTransaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<(WhaleTransaction & { age?: string; valueFormatted?: string; usdValue?: string; }) | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [timeframe, setTimeframe] = useState<'24h' | '3d' | '7d'>('24h');
@@ -206,17 +206,24 @@ const WhaleTracker = () => {
   };
 
   const handleAnalyzeTransaction = async (transaction: WhaleTransaction) => {
-    // Create a copy with valid age if missing
+    // Create a copy with valid age if missing and transform to expected format
     const txWithValidTimestamp = {
       ...transaction,
-      age: transaction.age || timeAgo(transaction.timestamp) || 'Recently'
+      age: timeAgo(transaction.timestamp) || 'Recently',
+      valueFormatted: formatCoreValue(transaction.value),
+      usdValue: `$${formatUSDValue(transaction.valueUSD)}`,
+      tokenAddress: transaction.tokenSymbol || 'CORE'
     };
     setSelectedTransaction(txWithValidTimestamp);
     setIsAnalyzing(true);
     setAiAnalysis('');
     try {
       // In production, use the actual Gemini API
-      const analysis = await generateWhaleAnalysis(txWithValidTimestamp);
+      const analysisPayload = {
+        ...txWithValidTimestamp,
+        type: transaction.type as 'buy' | 'sell' | 'transfer'
+      };
+      const analysis = await generateWhaleAnalysis(analysisPayload as any);
       setAiAnalysis(analysis || 'No analysis available');
     } catch (error) {
       console.error('Error generating AI analysis:', error);
@@ -261,11 +268,11 @@ const WhaleTracker = () => {
   };
 
   const getExplorerUrl = (hash: string) => {
-    return `https://explorer.evm.iota.org/tx/${hash || ''}`;
+    return `https://scan.test2.btcs.network/tx/${hash || ''}`;
   };
 
   const getAddressExplorerUrl = (address: string) => {
-    return `https://explorer.evm.iota.org/address/${address || ''}`;
+    return `https://scan.test2.btcs.network/address/${address || ''}`;
   };
 
   // Calculate statistics
@@ -342,7 +349,7 @@ const WhaleTracker = () => {
                   <div className="h-2 w-full bg-cosmic-800 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-green-500 to-red-500" 
-                      style={{ width: `${stats.buyPercentage}%` }}
+                      style={{ width: `${stats.internalPercentage}%` }}
                     ></div>
                   </div>
                 </div>
@@ -370,11 +377,11 @@ const WhaleTracker = () => {
             <CardContent className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-green-500">Buy</span>
-                <span className="text-xs font-mono">{stats.buyVolume}</span>
+                <span className="text-xs font-mono">{stats.internalVolume}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-red-500">Sell</span>
-                <span className="text-xs font-mono">{stats.sellVolume}</span>
+                <span className="text-xs font-mono">{stats.transferVolume}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-blue-500">Transfer</span>
@@ -392,7 +399,7 @@ const WhaleTracker = () => {
             <div className="flex justify-between items-center">
               <CardTitle className="text-xl">{selectedToken.name || 'Unknown'} ({selectedToken.symbol || 'Unknown'})</CardTitle>
               <a 
-                href={`https://explorer.evm.iota.org/token/${selectedToken.address || ''}`}
+                href={`https://scan.test2.btcs.network/token/${selectedToken.address || ''}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-nebula-400 hover:text-nebula-300 flex items-center"
@@ -444,25 +451,25 @@ const WhaleTracker = () => {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Buy Pressure:</span>
-                  <span className={stats && stats.buyPercentage > 60 ? 'text-green-500' : 'text-muted-foreground'}>
-                    {stats?.buyPercentage.toFixed(1) || '0.0'}%
+                  <span className={stats && stats.internalPercentage > 60 ? 'text-green-500' : 'text-muted-foreground'}>
+                    {stats?.internalPercentage.toFixed(1) || '0.0'}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sell Pressure:</span>
-                  <span className={stats && stats.sellPercentage > 60 ? 'text-red-500' : 'text-muted-foreground'}>
-                    {stats?.sellPercentage.toFixed(1) || '0.0'}%
+                  <span className={stats && stats.transferPercentage > 60 ? 'text-red-500' : 'text-muted-foreground'}>
+                    {stats?.transferPercentage.toFixed(1) || '0.0'}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sentiment:</span>
                   <span className={
-                    stats && stats.buyPercentage > 60 ? 'text-green-500' :
-                    stats && stats.sellPercentage > 60 ? 'text-red-500' :
+                    stats && stats.internalPercentage > 60 ? 'text-green-500' :
+                    stats && stats.transferPercentage > 60 ? 'text-red-500' :
                     'text-blue-500'
                   }>
-                    {stats && stats.buyPercentage > 60 ? 'Bullish' :
-                     stats && stats.sellPercentage > 60 ? 'Bearish' :
+                    {stats && stats.internalPercentage > 60 ? 'Internal Heavy' :
+                     stats && stats.transferPercentage > 60 ? 'Transfer Heavy' :
                      'Neutral'}
                   </span>
                 </div>
@@ -478,9 +485,9 @@ const WhaleTracker = () => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-2xl">Whale Transaction Tracker</CardTitle>
-                <CardDescription>Monitor large token movements on the IOTA network</CardDescription>
+                <CardDescription>Monitor large token movements on the Core Testnet network</CardDescription>
                 {/* Visual indicator for mock data */}
-                {isUsingMockData && (
+                {!isUsingCoreAPI && (
                   <div className="text-xs text-amber-400 flex items-center mt-2">
                     <Info className="h-3 w-3 mr-1" />
                     <span>Using simulated data for demonstration purposes</span>
@@ -585,16 +592,8 @@ const WhaleTracker = () => {
                   className="mt-4"
                   onClick={() => {
                     setIsLoading(true);
-                    getWhaleTransactions(timeframe, tokenFilter)
-                      .then(data => {
-                        setTransactions(data || []);
-                        setError(null);
-                      })
-                      .catch(err => {
-                        console.error('Error retrying fetch:', err);
-                        setError('Failed to fetch transaction data. Please try again later.');
-                      })
-                      .finally(() => setIsLoading(false));
+                    // Trigger the useEffect by updating the dependency
+                    setTimeframe(timeframe);
                   }}
                 >
                   Retry

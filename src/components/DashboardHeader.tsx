@@ -13,14 +13,14 @@ const DashboardHeader = () => {
   const [showAIDocumentation, setShowAIDocumentation] = useState(false);
 
   const handleFaucetClick = () => {
-    window.open('https://evm-toolkit.evm.testnet.iotaledger.net/', '_blank');
+    window.open('https://scan.test2.btcs.network/faucet', '_blank');
   };
 
   const handleAddNetwork = async () => {
     // Check if MetaMask is installed
     if (typeof window.ethereum === 'undefined') {
       toast.error('MetaMask Not Found', {
-        description: 'Please install MetaMask to add the IOTA EVM Testnet.'
+        description: 'Please install MetaMask to add the Core Testnet.'
       });
       return;
     }
@@ -69,7 +69,7 @@ const DashboardHeader = () => {
       });
       
       toast.success('Network Added', {
-        description: 'IOTA EVM Testnet has been added to your wallet.'
+        description: 'Core Testnet has been added to your wallet.'
       });
     } catch (error: any) {
       console.error('Error adding network:', error);
@@ -77,7 +77,7 @@ const DashboardHeader = () => {
       // Check for specific error about symbol mismatch
       if (error.message && error.message.includes('nativeCurrency.symbol does not match')) {
         toast.info('Network Already Added', {
-          description: 'The IOTA EVM Testnet is already in your wallet. Please switch to it manually.'
+          description: 'The Core Testnet is already in your wallet. Please switch to it manually.'
         });
       } else {
         toast.error(
@@ -134,7 +134,7 @@ const DashboardHeader = () => {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Add IOTA EVM Testnet to MetaMask</p>
+                <p>Add Core Testnet to MetaMask</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

@@ -46,7 +46,7 @@ const AIDocumentation = () => {
                 <h2 className="text-xl font-bold">AI-Powered DeFi Assistant</h2>
                 <p>
                   CoreAI uses advanced artificial intelligence to transform how users interact with 
-                  decentralized finance on the IOTA network. Our AI system combines multiple technologies 
+                  decentralized finance on the Core Blockchain network. Our AI system combines multiple technologies 
                   to provide intelligent portfolio management, market analysis, and on-chain insights.
                 </p>
                 
@@ -163,14 +163,14 @@ const AIDocumentation = () => {
                       On-Chain Data
                     </h3>
                     <ul className="mt-2">
-                      <li>IOTA Explorer API for transaction data</li>
+                      <li>Core Explorer API for transaction data</li>
                       <li>Smart contract events and interactions</li>
                       <li>Token transfers and whale movements</li>
                       <li>Wallet behavior and patterns</li>
                       <li>Protocol metrics (TVL, volume, etc.)</li>
                     </ul>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Data is fetched in real-time from the IOTA blockchain for the most current insights.
+                      Data is fetched in real-time from the Core Blockchain for the most current insights.
                     </p>
                   </div>
                   
@@ -243,7 +243,7 @@ const AIDocumentation = () => {
                 <div className="bg-cosmic-800 p-4 rounded-lg mt-4 font-mono text-sm overflow-x-auto">
                   <h3 className="text-nebula-400 font-semibold mb-2">Example: Whale Transaction Analysis Prompt</h3>
                   <pre className="whitespace-pre-wrap">
-{`You are a blockchain analyst specializing in whale transaction analysis for the IOTA ecosystem. 
+{`You are a blockchain analyst specializing in whale transaction analysis for the Core Blockchain ecosystem. 
 Analyze this whale transaction and provide insights:
 
 Transaction Details:
@@ -271,7 +271,7 @@ Keep your analysis factual and evidence-based. Mention if certain conclusions ar
                 <div className="bg-cosmic-800 p-4 rounded-lg mt-4 font-mono text-sm overflow-x-auto">
                   <h3 className="text-nebula-400 font-semibold mb-2">Example: Portfolio Rebalancing Prompt</h3>
                   <pre className="whitespace-pre-wrap">
-{`You are an AI portfolio advisor specializing in crypto asset allocation for the IOTA ecosystem.
+{`You are an AI portfolio advisor specializing in crypto asset allocation for the Core Blockchain ecosystem.
 Analyze the user's current portfolio and market conditions to provide rebalancing advice:
 
 Current Portfolio:
@@ -442,7 +442,7 @@ Clearly indicate when advice is speculative vs data-driven.`}
                 <div className="rounded-full bg-nebula-500/20 p-1 mt-0.5">
                   <Database className="h-3 w-3 text-nebula-400" />
                 </div>
-                <span>Real-time IOTA blockchain data processing</span>
+                <span>Real-time Core Blockchain data processing</span>
               </li>
               <li className="flex items-start gap-2">
                 <div className="rounded-full bg-nebula-500/20 p-1 mt-0.5">
@@ -607,7 +607,7 @@ Clearly indicate when advice is speculative vs data-driven.`}
               <li>Enhanced personalization through user preference learning</li>
               <li>More sophisticated market prediction models</li>
               <li>Expanded multimodal capabilities (chart analysis, document processing)</li>
-              <li>Deeper integration with IOTA's unique features and capabilities</li>
+              <li>Deeper integration with Core Blockchain's unique features and capabilities</li>
               <li>Additional language support for international users</li>
             </ul>
           </div>

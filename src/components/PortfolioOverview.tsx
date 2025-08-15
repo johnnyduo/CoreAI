@@ -20,14 +20,13 @@ const PortfolioOverview = () => {
   // Use wagmi's useBalance hook
   const { data: balanceData, isLoading: isBalanceLoading } = useBalance({
     address: address,
-    enabled: isConnected && !!address,
   });
   
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [portfolioChange, setPortfolioChange] = useState(0);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
-  const [iotaPrice, setIotaPrice] = useState(0.18); // Default mock price
+  const [corePrice, setCorePrice] = useState(1.20); // Default mock price
   
   const isPositive = portfolioChange > 0;
   
@@ -36,25 +35,30 @@ const PortfolioOverview = () => {
     refreshAllocations();
   }, [refreshAllocations]);
   
-  // Fetch IOTA price from CoinGecko
+  // Fetch Core price from CoinGecko (as fallback) or Core API
   useEffect(() => {
-    const fetchIotaPrice = async () => {
+    const fetchCorePrice = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=iota&vs_currencies=usd');
+        // Try Core DAO API first (if we had proper API key)
+        // For now, use CoinGecko as fallback for Core token price
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=coredaoorg&vs_currencies=usd');
         const data = await response.json();
-        if (data && data.iota && data.iota.usd) {
-          setIotaPrice(data.iota.usd);
+        if (data && data.coredaoorg && data.coredaoorg.usd) {
+          setCorePrice(data.coredaoorg.usd);
+        } else {
+          // Fallback to default price if API fails
+          console.log('Using fallback Core price');
         }
       } catch (error) {
-        console.error('Error fetching IOTA price:', error);
+        console.error('Error fetching Core price:', error);
         // Continue with mock price
       }
     };
     
-    fetchIotaPrice();
+    fetchCorePrice();
     
     // Refresh price every 5 minutes
-    const intervalId = setInterval(fetchIotaPrice, 300000);
+    const intervalId = setInterval(fetchCorePrice, 300000);
     return () => clearInterval(intervalId);
   }, []);
   
@@ -75,7 +79,7 @@ const PortfolioOverview = () => {
         const balanceInEth = parseFloat(formatEther(balanceData.value));
         
         // Calculate portfolio value
-        const calculatedValue = balanceInEth * iotaPrice;
+        const calculatedValue = balanceInEth * corePrice;
         
         // Set portfolio value
         setPortfolioValue(calculatedValue);
@@ -92,7 +96,7 @@ const PortfolioOverview = () => {
         setPortfolioChange(0);
       }
     }
-  }, [balanceData, isBalanceLoading, isConnected, address, iotaPrice]);
+  }, [balanceData, isBalanceLoading, isConnected, address, corePrice]);
   
   // Format the portfolio data from allocations
   const portfolioData = allocations.map(item => ({
