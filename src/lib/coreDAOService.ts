@@ -1,23 +1,10 @@
 // src/lib/coreDAOService.ts
 import { formatEther, formatUnits } from 'ethers';
 
-// Core DAO API configuration
-// NOTE: Core DAO API blocks ALL browser requests (CORS policy)
-// This affects localhost, Vercel, Netlify, and all frontend deployments
-// To use real blockchain data, you would need a backend API proxy
-const CORE_DAO_API_KEY = import.meta.env.VITE_CORE_API_KEY;
-const CORE_DAO_BASE_URL = 'https://openapi.coredao.org/api';
-
-// Use proxy in development to bypass CORS
-const getAPIBaseURL = (): string => {
-  if (typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || 
-       window.location.hostname === '127.0.0.1' ||
-       window.location.hostname.includes('localhost'))) {
-    return '/api/coredao'; // Use Vite proxy
-  }
-  return CORE_DAO_BASE_URL;
-};
+// Core DAO configuration
+const CORE_RPC_URL = 'https://rpc.coredao.org';
+const CORE_DAO_API_BASE = 'https://openapi.coredao.org/api';
+const API_KEY = '67fc7eb5d61a497287bccefe15895b04';
 
 // Types for Core DAO API responses
 export interface CoreDAOTransaction {
@@ -68,139 +55,131 @@ export interface ProcessedWhaleTransaction {
   isRealData: boolean;
 }
 
-// Helper function to create API requests
-/**
- * Create API request URL with parameters
- */
-const createAPIRequest = (action: string, params: Record<string, string> = {}, module: string = 'geth'): string => {
-  const baseURL = getAPIBaseURL();
-  
-  // For proxy paths (relative URLs), construct manually
-  if (baseURL.startsWith('/')) {
-    const urlParams = new URLSearchParams();
-    
-    // Add API key if available
-    if (CORE_DAO_API_KEY) {
-      urlParams.set('apikey', CORE_DAO_API_KEY);
-    }
-    
-    urlParams.set('module', module);
-    urlParams.set('action', action);
-    
-    // Add additional parameters
-    Object.entries(params).forEach(([key, value]) => {
-      urlParams.set(key, value);
-    });
-    
-    return `${baseURL}?${urlParams.toString()}`;
-  } else {
-    // For full URLs, use URL constructor
-    const url = new URL(baseURL);
-    
-    // Add API key if available
-    if (CORE_DAO_API_KEY) {
-      url.searchParams.set('apikey', CORE_DAO_API_KEY);
-    }
-    
-    url.searchParams.set('module', module);
-    url.searchParams.set('action', action);
+// Make API calls to Core DAO API using correct endpoint format: /api/{module}/{action}
+async function makeCoreDAOAPICall(endpoint: string, params: Record<string, string> = {}) {
+  try {
+    const url = new URL(`${CORE_DAO_API_BASE}/${endpoint}`);
+    url.searchParams.set('apikey', API_KEY);
     
     // Add additional parameters
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.set(key, value);
     });
-    
-    return url.toString();
-  }
-};
 
-/**
- * Get the latest block number
- */
-export const getLatestBlockNumber = async (): Promise<number> => {
-  try {
-    const url = createAPIRequest('eth_blockNumber');
-    console.log('Fetching latest block number from:', url);
-    
-    // Add timeout to prevent hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const response = await fetch(url, { 
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    clearTimeout(timeoutId);
-    
+    console.log('Core DAO API call:', url.toString());
+    const response = await fetch(url.toString());
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
+
+    const data = await response.json();
     
-    const data = await response.text();
-    console.log('Latest block number response:', data);
-    
-    // Parse the response based on the expected format
-    if (data.includes('"result"')) {
-      const jsonResponse = JSON.parse(data);
-      const blockHex = jsonResponse.result;
-      return parseInt(blockHex, 16);
-    } else {
-      // Direct hex response
-      return parseInt(data.replace(/["\s]/g, ''), 16);
+    if (data.error) {
+      throw new Error(`API error: ${data.error.message}`);
     }
+    
+    return data;
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('Latest block number request timed out');
-    } else {
-      console.error('Error fetching latest block number:', error);
-    }
+    console.error('Core DAO API call failed:', error);
     throw error;
+  }
+}
+
+// Make RPC calls directly to Core blockchain
+async function makeRPCCall(method: string, params: any[] = []) {
+  try {
+    const response = await fetch(CORE_RPC_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method,
+        params,
+        id: 1,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`RPC request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(`RPC error: ${data.error.message}`);
+    }
+    
+    return data.result;
+  } catch (error) {
+    console.error('RPC call failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the latest block number using Core DAO API (preferred) or RPC fallback
+ */
+export const getLatestBlockNumber = async (): Promise<number> => {
+  try {
+    // Try Core DAO API first with correct endpoint format
+    console.log('Fetching latest block number from Core DAO API...');
+    const result = await makeCoreDAOAPICall('geth/eth_blockNumber');
+    const blockNumber = parseInt(result.result, 16);
+    console.log('Latest block number from API:', blockNumber);
+    return blockNumber;
+  } catch (apiError) {
+    console.warn('Core DAO API failed, trying RPC:', apiError);
+    
+    try {
+      // Fallback to RPC
+      const result = await makeRPCCall('eth_blockNumber');
+      const blockNumber = parseInt(result, 16);
+      console.log('Latest block number from RPC:', blockNumber);
+      return blockNumber;
+    } catch (rpcError) {
+      console.error('Both API and RPC failed:', rpcError);
+      throw rpcError;
+    }
   }
 };
 
 /**
- * Get block by number
+ * Get block by number using Core DAO API (preferred) or RPC fallback
  */
 export const getBlockByNumber = async (blockNumber: number | string, includeTransactions = true): Promise<CoreDAOBlock | null> => {
   try {
     const hexBlockNumber = typeof blockNumber === 'string' ? blockNumber : ('0x' + blockNumber.toString(16));
-    const url = createAPIRequest('geth/eth_getBlockByNumber', {
-      tag: hexBlockNumber,
-      fullTx: includeTransactions.toString()
-    });
+    console.log('Fetching block:', hexBlockNumber);
     
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-    
-    const text = await response.text();
-    console.log('Block API Response:', text.substring(0, 200) + '...');
-    
-    // Check if response is empty
-    if (!text.trim()) {
-      throw new Error('Empty response from Core DAO API');
-    }
-    
-    // Core DAO API returns JSON-RPC format
-    let jsonResponse;
     try {
-      jsonResponse = JSON.parse(text);
-    } catch (parseError) {
-      console.error('JSON parsing failed. Raw response:', text);
-      throw new Error(`Failed to parse API response: ${parseError.message}`);
+      // Try Core DAO API first
+      const result = await makeCoreDAOAPICall('geth/eth_getBlockByNumber', {
+        blockNumber: hexBlockNumber,
+        includeTransactions: includeTransactions.toString()
+      });
+      
+      if (!result.result) {
+        console.log('Block not found in API:', hexBlockNumber);
+        return null;
+      }
+      
+      return result.result;
+    } catch (apiError) {
+      console.warn('Core DAO API failed, trying RPC:', apiError);
+      
+      // Fallback to RPC
+      const result = await makeRPCCall('eth_getBlockByNumber', [hexBlockNumber, includeTransactions]);
+      
+      if (!result) {
+        console.log('Block not found in RPC:', hexBlockNumber);
+        return null;
+      }
+      
+      return result;
     }
-    
-    if (jsonResponse.error) {
-      throw new Error(`API Error: ${jsonResponse.error.message || 'Unknown error'}`);
-    }
-    
-    return jsonResponse.result;
   } catch (error) {
     console.error('Error fetching block by number:', error);
     return null;
@@ -208,37 +187,35 @@ export const getBlockByNumber = async (blockNumber: number | string, includeTran
 };
 
 /**
- * Get transaction by hash
+ * Get transaction by hash using Core DAO API (preferred) or RPC fallback
  */
 export const getTransactionByHash = async (hash: string): Promise<CoreDAOTransaction | null> => {
   try {
-    const url = createAPIRequest('geth/eth_getTransactionByHash', { hash });
-    const response = await fetch(url);
+    console.log('Fetching transaction:', hash);
     
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-    
-    const text = await response.text();
-    
-    // Check if response is empty
-    if (!text.trim()) {
-      throw new Error('Empty response from Core DAO API');
-    }
-    
-    let jsonResponse;
     try {
-      jsonResponse = JSON.parse(text);
-    } catch (parseError) {
-      console.error('JSON parsing failed for transaction. Raw response:', text);
-      throw new Error(`Failed to parse API response: ${parseError.message}`);
+      // Try Core DAO API first
+      const result = await makeCoreDAOAPICall('geth/eth_getTransactionByHash', { hash });
+      
+      if (!result.result) {
+        console.log('Transaction not found in API:', hash);
+        return null;
+      }
+      
+      return result.result;
+    } catch (apiError) {
+      console.warn('Core DAO API failed, trying RPC:', apiError);
+      
+      // Fallback to RPC
+      const result = await makeRPCCall('eth_getTransactionByHash', [hash]);
+      
+      if (!result) {
+        console.log('Transaction not found in RPC:', hash);
+        return null;
+      }
+      
+      return result;
     }
-    
-    if (jsonResponse.error) {
-      throw new Error(`API Error: ${jsonResponse.error.message || 'Unknown error'}`);
-    }
-    
-    return jsonResponse.result;
   } catch (error) {
     console.error('Error fetching transaction by hash:', error);
     return null;
@@ -246,41 +223,241 @@ export const getTransactionByHash = async (hash: string): Promise<CoreDAOTransac
 };
 
 /**
- * Get transaction receipt
+ * Get internal transactions by block range using Core DAO API
  */
-export const getTransactionReceipt = async (hash: string): Promise<any> => {
+export const getInternalTransactionsByBlockRange = async (
+  startBlock: number,
+  endBlock: number,
+  page = 1,
+  offset = 100,
+  sort = 'desc'
+): Promise<any[]> => {
   try {
-    const url = createAPIRequest('geth/eth_getTransactionReceipt', { hash });
-    const response = await fetch(url);
+    console.log(`Fetching internal transactions from block ${startBlock} to ${endBlock}...`);
     
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    const result = await makeCoreDAOAPICall('accounts/internal_txs_by_block_range', {
+      startblock: startBlock.toString(),
+      endblock: endBlock.toString(),
+      page: page.toString(),
+      offset: offset.toString(),
+      sort: sort
+    });
+    
+    if (!result.result || !Array.isArray(result.result)) {
+      console.log('No internal transactions found in the specified block range');
+      return [];
     }
     
-    const data = await response.json();
-    return data;
+    console.log(`Found ${result.result.length} internal transactions`);
+    return result.result;
+    
   } catch (error) {
-    console.error('Error fetching transaction receipt:', error);
-    return null;
+    console.error('Error fetching internal transactions by block range:', error);
+    return [];
   }
 };
 
 /**
- * Get recent blocks and extract whale transactions
- * NOTE: Core DAO API blocks ALL browser requests (CORS), so this always returns mock data
+ * Get recent whale transactions using Core DAO API block range endpoints
  */
 export const getRecentWhaleTransactions = async (
-  minValueUSD = 50000,
-  blocksToScan = 5,
+  minValueUSD = 2000, // Even lower threshold to capture more activity
+  blocksToScan = 1000000, // 🚀 ULTIMATE: 1 MILLION BLOCKS (30-35 days)
   corePrice = 1.20
 ): Promise<ProcessedWhaleTransaction[]> => {
-  // Core DAO API blocks browser requests with CORS policy
-  // This affects both localhost AND production (Vercel)
-  console.log('🚨 Core DAO API blocks all browser requests due to CORS policy');
-  console.log('📝 Returning empty array to trigger mock data fallback');
-  console.log('💡 To use real blockchain data, you would need a backend proxy server');
-  
-  return []; // Always return empty to trigger mock data fallback
+  try {
+    console.log('Attempting to fetch whale transactions using Core DAO API...');
+    
+    // Step 1: Get latest block number
+    let latestBlockNumber;
+    try {
+      latestBlockNumber = await getLatestBlockNumber();
+      console.log('Latest block number:', latestBlockNumber);
+    } catch (blockError) {
+      console.error('Failed to get latest block number:', blockError);
+      throw new Error('Cannot fetch latest block number');
+    }
+    
+    // Step 2: Calculate block range to scan (scan more blocks to find whale transactions)
+    const startBlock = Math.max(latestBlockNumber - blocksToScan, 0);
+    const endBlock = latestBlockNumber;
+    
+    console.log(`Scanning blocks from ${startBlock} to ${endBlock} (${blocksToScan} blocks) for whale transactions...`);
+    
+    // Step 3: Get internal transactions by block range with pagination
+    let allWhaleTransactions: ProcessedWhaleTransaction[] = [];
+    let page = 1;
+    const maxPages = 5; // Limit to prevent too many API calls
+    
+    while (page <= maxPages) {
+      try {
+        console.log(`Fetching page ${page} of internal transactions...`);
+        
+        const internalTxs = await getInternalTransactionsByBlockRange(
+          startBlock, 
+          endBlock, 
+          page, 
+          1000, // Get maximum transactions per page
+          'desc' // Sort by newest first
+        );
+        
+        if (!internalTxs.length) {
+          console.log(`No more transactions found on page ${page}, stopping pagination`);
+          break;
+        }
+        
+        console.log(`Page ${page}: Found ${internalTxs.length} internal transactions`);
+        
+        // Step 4: Process and filter whale transactions
+        const pageWhaleTransactions: ProcessedWhaleTransaction[] = [];
+        
+        for (const tx of internalTxs) {
+          try {
+            // Skip transactions without value
+            if (!tx.value || tx.value === '0' || tx.value === '0x0') {
+              continue;
+            }
+            
+            // Convert value from wei to CORE
+            const valueInCore = parseFloat(formatEther(tx.value));
+            const valueUSD = valueInCore * corePrice;
+            
+            // Only include transactions above the minimum USD threshold
+            if (valueUSD >= minValueUSD) {
+              // Parse timestamp - Core DAO API returns readable date strings
+              let timestamp = 0;
+              if (tx.timeStamp) {
+                try {
+                  // Try to parse the timestamp string (e.g., "Fri Aug 15 05:25:44 UTC 2025")
+                  timestamp = Math.floor(new Date(tx.timeStamp).getTime() / 1000);
+                } catch (timeError) {
+                  // Fallback to current time if parsing fails
+                  timestamp = Math.floor(Date.now() / 1000);
+                }
+              }
+              
+              const processedTx: ProcessedWhaleTransaction = {
+                hash: tx.hash || tx.transactionHash || '',
+                from: tx.from || '',
+                to: tx.to || '',
+                value: valueInCore.toFixed(8),
+                valueUSD: valueUSD,
+                timestamp: timestamp,
+                blockNumber: tx.blockNumber || '',
+                type: tx.type === 'CALL' ? 'internal' : 'transfer',
+                tokenSymbol: 'CORE',
+                tokenName: 'Core Token',
+                gasUsed: tx.gasUsed || tx.gas || '0',
+                gasPrice: '0', // Internal transactions don't have gas price
+                isRealData: true
+              };
+              
+              pageWhaleTransactions.push(processedTx);
+              console.log(`Found whale transaction: ${valueInCore.toFixed(2)} CORE ($${valueUSD.toFixed(2)})`);
+            }
+          } catch (txError) {
+            console.warn(`Error processing transaction:`, txError);
+            continue;
+          }
+        }
+        
+        allWhaleTransactions = allWhaleTransactions.concat(pageWhaleTransactions);
+        
+        // If we found enough whale transactions, we can stop
+        if (allWhaleTransactions.length >= 20) {
+          console.log(`Found enough whale transactions (${allWhaleTransactions.length}), stopping pagination`);
+          break;
+        }
+        
+        // If this page had fewer transactions than requested, probably no more pages
+        if (internalTxs.length < 1000) {
+          console.log(`Page ${page} had fewer than 1000 transactions, probably last page`);
+          break;
+        }
+        
+        page++;
+        
+        // Add delay between pages to respect API rate limits
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (pageError) {
+        console.warn(`Error fetching page ${page}:`, pageError);
+        break;
+      }
+    }
+    
+    if (!allWhaleTransactions.length) {
+      console.log('No whale transactions found, trying with lower threshold...');
+      // If no whale transactions found, try with much lower threshold
+      const lowerThreshold = 1000; // $1000 USD
+      console.log(`Retrying with lower threshold: $${lowerThreshold}`);
+      
+      // Quick retry with different parameters
+      const retryTxs = await getInternalTransactionsByBlockRange(
+        startBlock, 
+        endBlock, 
+        1, 
+        100, // Smaller batch
+        'desc'
+      );
+      
+      for (const tx of retryTxs) {
+        try {
+          if (!tx.value || tx.value === '0' || tx.value === '0x0') continue;
+          
+          const valueInCore = parseFloat(formatEther(tx.value));
+          const valueUSD = valueInCore * corePrice;
+          
+          if (valueUSD >= lowerThreshold) {
+            let timestamp = 0;
+            if (tx.timeStamp) {
+              try {
+                timestamp = Math.floor(new Date(tx.timeStamp).getTime() / 1000);
+              } catch (timeError) {
+                timestamp = Math.floor(Date.now() / 1000);
+              }
+            }
+            
+            const processedTx: ProcessedWhaleTransaction = {
+              hash: tx.hash || '',
+              from: tx.from || '',
+              to: tx.to || '',
+              value: valueInCore.toFixed(8),
+              valueUSD: valueUSD,
+              timestamp: timestamp,
+              blockNumber: tx.blockNumber || '',
+              type: 'internal',
+              tokenSymbol: 'CORE',
+              tokenName: 'Core Token',
+              gasUsed: tx.gasUsed || '0',
+              gasPrice: '0',
+              isRealData: true
+            };
+            
+            allWhaleTransactions.push(processedTx);
+            console.log(`Found transaction with lower threshold: ${valueInCore.toFixed(2)} CORE ($${valueUSD.toFixed(2)})`);
+          }
+        } catch (error) {
+          continue;
+        }
+      }
+    }
+    
+    // Step 5: Sort by value descending and limit results
+    const sortedTransactions = allWhaleTransactions
+      .sort((a, b) => b.valueUSD - a.valueUSD)
+      .slice(0, 50); // Limit to top 50 whale transactions
+    
+    console.log(`Successfully fetched ${sortedTransactions.length} whale transactions from Core DAO API`);
+    
+    return sortedTransactions;
+    
+  } catch (error) {
+    console.error('Core DAO API whale transaction fetching failed:', error);
+    console.log('Returning empty array - will fallback to mock data in WhaleTracker');
+    // Return empty array to trigger fallback to mock data
+    return [];
+  }
 };
 
 /**
@@ -309,7 +486,7 @@ export const getCorePrice = async (): Promise<number> => {
   } catch (error) {
     console.warn('CoinGecko failed:', error);
     console.log('Using fallback price of $1.20');
-    return 1.20; // Fallback price - Core DAO API also blocked by CORS
+    return 1.20; // Fallback price
   }
 };
 

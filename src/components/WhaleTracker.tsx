@@ -127,7 +127,7 @@ const WhaleTracker = () => {
           setCorePrice(currentCorePrice);
           
           // Fetch real whale transactions from Core DAO
-          const realTransactions = await getRecentWhaleTransactions(50000, 15, currentCorePrice);
+          const realTransactions = await getRecentWhaleTransactions(2000, 1000000, currentCorePrice);
           
           if (realTransactions.length > 0) {
             whaleTransactions = realTransactions;
@@ -173,7 +173,7 @@ const WhaleTracker = () => {
             const usdValue = tx.valueUSD;
             switch (sizeFilter) {
               case 'small':
-                return usdValue >= 5000 && usdValue < 50000;
+                return usdValue >= 2000 && usdValue < 50000;
               case 'medium':
                 return usdValue >= 50000 && usdValue < 250000;
               case 'large':
@@ -235,12 +235,30 @@ const WhaleTracker = () => {
     }
   };
 
+  // Helper function to format transaction values consistently
+  const formatTransactionValueForDisplay = (transaction: WhaleTransaction): string => {
+    if ('isRealData' in transaction && transaction.isRealData) {
+      // Real data from Core DAO API - value is already in CORE tokens
+      const valueInCore = parseFloat(transaction.value);
+      if (valueInCore >= 1000000) {
+        return `${(valueInCore / 1000000).toFixed(2)}M CORE`;
+      } else if (valueInCore >= 1000) {
+        return `${(valueInCore / 1000).toFixed(2)}K CORE`;
+      } else {
+        return `${valueInCore.toFixed(4)} CORE`;
+      }
+    } else {
+      // Mock data - value is in wei format
+      return formatCoreValue(transaction.value);
+    }
+  };
+
   const handleAnalyzeTransaction = async (transaction: WhaleTransaction) => {
     // Create a copy with valid age if missing and transform to expected format
     const txWithValidTimestamp = {
       ...transaction,
       age: timeAgo(transaction.timestamp) || 'Recently',
-      valueFormatted: formatCoreValue(transaction.value),
+      valueFormatted: formatTransactionValueForDisplay(transaction),
       usdValue: `$${formatUSDValue(transaction.valueUSD)}`,
       tokenAddress: transaction.tokenSymbol || 'CORE'
     };
@@ -298,11 +316,11 @@ const WhaleTracker = () => {
   };
 
   const getExplorerUrl = (hash: string) => {
-    return `https://scan.test2.btcs.network/tx/${hash || ''}`;
+    return `https://scan.coredao.org/tx/${hash || ''}`;
   };
 
   const getAddressExplorerUrl = (address: string) => {
-    return `https://scan.test2.btcs.network/address/${address || ''}`;
+    return `https://scan.coredao.org/address/${address || ''}`;
   };
 
   // Calculate statistics
@@ -515,17 +533,17 @@ const WhaleTracker = () => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-2xl">Whale Transaction Tracker</CardTitle>
-                <CardDescription>Monitor large token movements on the Core Testnet network</CardDescription>
+                <CardDescription>Monitor large token movements on the Core Mainnet network</CardDescription>
                 {/* Visual indicator for data source */}
                 {isUsingRealData ? (
                   <div className="text-xs text-green-400 flex items-center mt-2">
                     <Activity className="h-3 w-3 mr-1" />
-                    <span>Live data from Core DAO blockchain</span>
+                    <span>🚀 ULTIMATE MODE: Scanning 1,000,000 blocks (30-35 days) • Min: $2,000 USD</span>
                   </div>
                 ) : (
                   <div className="text-xs text-amber-400 flex items-center mt-2">
                     <Info className="h-3 w-3 mr-1" />
-                    <span>Simulated whale data (Core DAO API blocks browser requests due to CORS policy)</span>
+                    <span>Simulated whale data (API temporarily unavailable)</span>
                   </div>
                 )}
               </div>
@@ -578,7 +596,7 @@ const WhaleTracker = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Sizes</SelectItem>
-                    <SelectItem value="small">Small ($5k-$50k)</SelectItem>
+                    <SelectItem value="small">Small ($2k-$50k)</SelectItem>
                     <SelectItem value="medium">Medium ($50k-$250k)</SelectItem>
                     <SelectItem value="large">Large ($250k-$1M)</SelectItem>
                     <SelectItem value="mega">Mega ({'>'}$1M)</SelectItem>
@@ -604,16 +622,33 @@ const WhaleTracker = () => {
           
           <CardContent>
             {isLoading ? (
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-[250px]" />
-                      <Skeleton className="h-4 w-[200px]" />
-                    </div>
+              <div className="space-y-6">
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-400" />
+                  <h3 className="font-medium text-lg mb-2">Scanning Core Blockchain</h3>
+                  <p className="text-muted-foreground mb-4">
+                    🚀 ULTIMATE MODE: Analyzing 1,000,000 recent blocks (30-35 days) for whale transactions...
+                  </p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>• Minimum transaction value: $2,000 USD</p>
+                    <p>• Data source: Core DAO mainnet blockchain</p>
+                    <p>• Explorer: scan.coredao.org</p>
                   </div>
-                ))}
+                </div>
+                
+                {/* Skeleton rows for visual feedback */}
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-[250px]" />
+                        <Skeleton className="h-4 w-[200px]" />
+                      </div>
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -679,11 +714,16 @@ const WhaleTracker = () => {
                           <TableCell className="hidden md:table-cell font-mono text-xs">
                             <TooltipProvider>
                               <Tooltip>
-                                <TooltipTrigger className="underline decoration-dotted underline-offset-2">
-                                  {tx.from 
-                                    ? `${tx.from.substring(0, 6)}...${tx.from.substring(Math.max(0, tx.from.length - 4))}`
-                                    : 'Unknown'
-                                  }
+                                <TooltipTrigger asChild>
+                                  <button
+                                    className="underline decoration-dotted underline-offset-2 hover:text-blue-400 transition-colors"
+                                    onClick={() => window.open(getAddressExplorerUrl(tx.from || ''), '_blank')}
+                                  >
+                                    {tx.from 
+                                      ? `${tx.from.substring(0, 6)}...${tx.from.substring(Math.max(0, tx.from.length - 4))}`
+                                      : 'Unknown'
+                                    }
+                                  </button>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p className="font-mono text-xs">{tx.from || 'Unknown'}</p>
@@ -694,11 +734,16 @@ const WhaleTracker = () => {
                           <TableCell className="hidden md:table-cell font-mono text-xs">
                             <TooltipProvider>
                               <Tooltip>
-                                <TooltipTrigger className="underline decoration-dotted underline-offset-2">
-                                  {tx.to 
-                                    ? `${tx.to.substring(0, 6)}...${tx.to.substring(Math.max(0, tx.to.length - 4))}`
-                                    : 'Unknown'
-                                  }
+                                <TooltipTrigger asChild>
+                                  <button
+                                    className="underline decoration-dotted underline-offset-2 hover:text-blue-400 transition-colors"
+                                    onClick={() => window.open(getAddressExplorerUrl(tx.to || ''), '_blank')}
+                                  >
+                                    {tx.to 
+                                      ? `${tx.to.substring(0, 6)}...${tx.to.substring(Math.max(0, tx.to.length - 4))}`
+                                      : 'Unknown'
+                                    }
+                                  </button>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p className="font-mono text-xs">{tx.to || 'Unknown'}</p>
@@ -760,7 +805,7 @@ const WhaleTracker = () => {
             <div className="flex items-center">
               <Info className="h-3 w-3 mr-1" />
               <span>
-                Whale transactions are defined as movements of significant value ({'>'}$5,000) or representing a large portion of token supply.
+                Whale transactions are defined as movements of significant value ({'>'}$2,000) or representing a large portion of token supply.
               </span>
             </div>
           </CardFooter>
