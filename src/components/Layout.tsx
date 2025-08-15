@@ -6,6 +6,7 @@ import { LayoutDashboard, MessageCircle, Settings, BarChart2, Sparkles } from 'l
 import AIChat from './AIChat';
 import AllocationAdjuster from './AllocationAdjuster';
 import WhaleTracker from './WhaleTracker';
+import AnimaBot from './AnimaBot';
 
 interface LayoutProps {
   children: ReactNode;
@@ -29,44 +30,44 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="relative z-10">
         <DashboardHeader />
         
-        <main className="flex-1 container mx-auto py-8 pb-16 px-4">
+        <main className="flex-1 container mx-auto py-4 md:py-8 pb-16 px-2 md:px-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* Enhanced Tab Navigation */}
-            <div className="flex justify-center mb-12">
+            <div className="flex justify-center mb-6 md:mb-12">
               <div className="relative">
-                <TabsList className="bg-charcoal-800/60 backdrop-blur-xl p-2 rounded-2xl shadow-charcoal-deep border border-golden-border">
-                  <div className="absolute inset-0 bg-gradient-golden-shimmer bg-[length:200%_100%] animate-shimmer rounded-2xl opacity-30"></div>
+                <TabsList className="bg-charcoal-800/60 backdrop-blur-xl p-1 md:p-2 rounded-xl md:rounded-2xl shadow-charcoal-deep border border-golden-border flex md:inline-flex w-full md:w-auto">
+                  <div className="absolute inset-0 bg-gradient-golden-shimmer bg-[length:200%_100%] animate-shimmer rounded-xl md:rounded-2xl opacity-30"></div>
                   
                   <TabsTrigger 
                     value="dashboard" 
-                    className="relative flex items-center px-6 py-3 rounded-xl font-inter font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
+                    className="relative flex items-center justify-center flex-1 md:flex-none px-6 py-3 rounded-lg md:rounded-xl font-inter font-medium text-xs md:text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
                   >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    <span>Portfolio</span>
+                    <LayoutDashboard className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+                    <span className="hidden md:inline">Portfolio</span>
                   </TabsTrigger>
                   
                   <TabsTrigger 
                     value="whales" 
-                    className="relative flex items-center px-6 py-3 rounded-xl font-inter font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
+                    className="relative flex items-center justify-center flex-1 md:flex-none px-6 py-3 rounded-lg md:rounded-xl font-inter font-medium text-xs md:text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
                   >
-                    <BarChart2 className="h-4 w-4 mr-2" />
-                    <span>Whale Tracker</span>
+                    <BarChart2 className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+                    <span className="hidden md:inline">Whale Tracker</span>
                   </TabsTrigger>
                   
                   <TabsTrigger 
                     value="chat" 
-                    className="relative flex items-center px-6 py-3 rounded-xl font-inter font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
+                    className="relative flex items-center justify-center flex-1 md:flex-none px-6 py-3 rounded-lg md:rounded-xl font-inter font-medium text-xs md:text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
                   >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    <span>AI Assistant</span>
+                    <MessageCircle className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+                    <span className="hidden md:inline">AI Assistant</span>
                   </TabsTrigger>
                   
                   <TabsTrigger 
                     value="settings" 
-                    className="relative flex items-center px-6 py-3 rounded-xl font-inter font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
+                    className="relative flex items-center justify-center flex-1 md:flex-none px-6 py-3 rounded-lg md:rounded-xl font-inter font-medium text-xs md:text-sm transition-all duration-300 data-[state=active]:bg-gradient-golden data-[state=active]:text-charcoal-900 data-[state=active]:shadow-golden-glow data-[state=active]:scale-105 hover:bg-gold-400/10 text-gold-200 hover:text-gold-100"
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    <span>Settings</span>
+                    <Settings className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+                    <span className="hidden md:inline">Settings</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -87,12 +88,21 @@ const Layout = ({ children }: LayoutProps) => {
             
             <TabsContent value="chat" className="mt-0 outline-none">
               <div className="max-w-6xl mx-auto relative">
-                <div className="text-center mb-8">
+                <div className="text-center mb-8 relative">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-golden rounded-2xl shadow-golden-glow mb-4">
                     <Sparkles className="h-8 w-8 text-charcoal-900" />
                   </div>
                   <h2 className="text-3xl font-playfair font-bold golden-text mb-2">AI Assistant</h2>
                   <p className="text-gold-200/80 font-inter">Get personalized insights for your Core DeFi portfolio</p>
+                  
+                  {/* Floating Anima Bot Animation */}
+                  <div className="absolute top-0 right-0 lg:right-8">
+                    <AnimaBot 
+                      width={140} 
+                      height={140} 
+                      className="animate-bounce-slow" 
+                    />
+                  </div>
                 </div>
                 <AIChat />
               </div>

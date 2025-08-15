@@ -218,13 +218,55 @@ const TokenTable = ({ category = "all" }: { category?: string }) => {
     try {
       const insights = await fetchTokenInsights(token.symbol);
       setTokenInsight(insights);
+      
+      // Check if the response indicates API key issues
+      if (insights.includes('API key expired') || insights.includes('API_KEY_INVALID')) {
+        toast({
+          title: "AI Service Notice",
+          description: "The AI analysis service needs configuration updates. Showing general insights instead.",
+          variant: "default"
+        });
+      }
     } catch (error) {
       console.error('Error fetching token insights:', error);
-      toast({
-        title: "Failed to Load Insights",
-        description: error instanceof Error ? error.message : "Could not fetch AI insights for this token. Please try again later.",
-        variant: "destructive"
-      });
+      
+      // Check for API key errors
+      if (error instanceof Error && (
+        error.message.includes('API key expired') || 
+        error.message.includes('API_KEY_INVALID') ||
+        error.message.includes('401') ||
+        error.message.includes('403')
+      )) {
+        toast({
+          title: "AI Service Configuration",
+          description: "AI insights are temporarily unavailable. Please check API configuration.",
+          variant: "default"
+        });
+        
+        // Still show fallback content
+        setTokenInsight(`# ${token.symbol} Token Information
+
+## Service Notice
+AI insights are temporarily unavailable due to API configuration. Here's general information:
+
+## Token Details
+• **Symbol**: ${token.symbol}
+• **Name**: ${token.name || 'Token name unavailable'}
+• **Network**: Core Blockchain Ecosystem
+
+## General Investment Guidelines
+• **Research**: Always verify project fundamentals
+• **Risk**: Cryptocurrency investments are highly volatile
+• **Due Diligence**: Check official documentation and community
+
+*Please contact support for AI service restoration.*`);
+      } else {
+        toast({
+          title: "Failed to Load Insights",
+          description: error instanceof Error ? error.message : "Could not fetch AI insights for this token. Please try again later.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsInsightLoading(false);
     }
@@ -393,7 +435,7 @@ const TokenTable = ({ category = "all" }: { category?: string }) => {
               <CardTitle className="text-3xl font-playfair golden-text">{getCategoryTitle()}</CardTitle>
               {isGeminiEnabled && (
                 <p className="text-sm text-gold-200/60 mt-2 font-inter">
-                  Click on any token to view AI-powered insights
+                  Advanced AI analytics with real-time liquidity data powered by Glyph Exchange V4 on Core Network
                 </p>
               )}
             </div>

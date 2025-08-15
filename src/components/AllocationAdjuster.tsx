@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { useBlockchain } from '@/contexts/BlockchainContext';
-import { toast } from 'sonner';
+import RainbowCatRemix from '@/components/RainbowCatRemix';
+import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const AllocationAdjuster = () => {
@@ -16,6 +17,8 @@ const AllocationAdjuster = () => {
     isUpdatingAllocations,
     refreshAllocations 
   } = useBlockchain();
+  
+  const { toast } = useToast();
   
   const [localAllocations, setLocalAllocations] = useState<any[]>([]);
   const [total, setTotal] = useState(100);
@@ -105,8 +108,15 @@ const AllocationAdjuster = () => {
   
   return (
     <Card className="card-glass">
-      <CardHeader>
-        <CardTitle className="text-2xl">Portfolio Allocation</CardTitle>
+      <CardHeader className="relative">
+        <div className="absolute top-4 right-4">
+          <RainbowCatRemix 
+            width={100} 
+            height={100} 
+            className="animate-bounce-slow"
+          />
+        </div>
+        <CardTitle className="text-2xl pr-28">Portfolio Allocation</CardTitle>
         <CardDescription>Adjust your portfolio allocation across different asset categories</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

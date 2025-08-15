@@ -1,9 +1,11 @@
 // src/lib/geminiService.ts
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { toast } from '@/components/ui/use-toast';
 import { WhaleTransaction } from './explorerService';
 
 // Initialize the Gemini API with your API key
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(apiKey);
 
 /**
  * Check if Gemini API is available
@@ -11,43 +13,6 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 export const isGeminiAvailable = (): boolean => {
   return !!apiKey && apiKey !== 'your_gemini_api_key_here';
 };
-
-/**
- * Helper function to add retry logic to API calls
- */
-async function fetchWithRetry(
-  url: string, 
-  options: RequestInit, 
-  retries = 2, 
-  backoff = 300
-): Promise<Response> {
-  try {
-    const response = await fetch(url, options);
-    
-    // If the request was successful or we're out of retries, return the response
-    if (response.ok || retries === 0) {
-      return response;
-    }
-    
-    // For 503 errors, wait and retry
-    if (response.status === 503) {
-      console.log(`Gemini API returned 503, retrying in ${backoff}ms... (${retries} retries left)`);
-      await new Promise(resolve => setTimeout(resolve, backoff));
-      return fetchWithRetry(url, options, retries - 1, backoff * 2);
-    }
-    
-    // For other errors, just return the response
-    return response;
-  } catch (error) {
-    if (retries === 0) {
-      throw error;
-    }
-    
-    console.log(`Network error, retrying in ${backoff}ms... (${retries} retries left)`);
-    await new Promise(resolve => setTimeout(resolve, backoff));
-    return fetchWithRetry(url, options, retries - 1, backoff * 2);
-  }
-}
 
 /**
  * Generate token insights using Gemini API
@@ -58,8 +23,7 @@ export async function generateTokenInsights(symbol: string, context?: string): P
   }
 
   try {
-    // Use v1beta endpoint with gemini-2.0-flash model
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Create the prompt with the token symbol and any additional context
     const prompt = `
@@ -79,56 +43,55 @@ export async function generateTokenInsights(symbol: string, context?: string): P
       Note: This is for a portfolio management application focused on Core Blockchain ecosystem tokens.
     `;
 
-    // Make the API request with retry logic
-    const response = await fetchWithRetry(
-      endpoint, 
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 500,
-          }
-        }),
-      }
-    );
+    // Make the API request with the new SDK
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    return response.text();
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Gemini API error:', errorData);
-      
-      // Handle different error codes
-      if (response.status === 503) {
-        throw new Error('Gemini API is temporarily unavailable. Please try again later.');
-      } else if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again in a few moments.');
-      } else {
-        throw new Error(`Gemini API request failed with status ${response.status}`);
-      }
-    }
-
-    const data = await response.json();
-    
-    // Check if we have valid data
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
-      throw new Error('Invalid response from Gemini API');
-    }
-    
-    return data.candidates[0].content.parts[0].text;
   } catch (error) {
     console.error('Error generating token insights with Gemini:', error);
     
-    // Return a user-friendly error message
-    if (error instanceof Error) {
-      return `Unable to retrieve token insights: ${error.message}`;
+    // Check for specific API key errors
+    if (error instanceof Error && (
+      error.message.includes('API key expired') || 
+      error.message.includes('API_KEY_INVALID') ||
+      error.message.includes('401') ||
+      error.message.includes('403')
+    )) {
+      // Return a structured fallback analysis when API key is invalid
+      return `# ${symbol} Token Analysis
+
+## Market Overview
+The ${symbol} token is part of the Core Blockchain ecosystem, which focuses on Bitcoin-secured smart contracts and decentralized finance.
+
+## Key Characteristics
+• **Ecosystem Role**: Core blockchain native or ecosystem token
+• **Use Case**: Likely involved in staking, governance, or DeFi protocols
+• **Network**: Built on or connected to Core Blockchain infrastructure
+
+## Technical Analysis
+• **Blockchain**: Core Blockchain (Bitcoin-secured)
+• **Type**: ${symbol.length <= 4 ? 'Likely native or major ecosystem token' : 'Protocol or application token'}
+• **Liquidity**: Monitor trading volume and market depth
+
+## Trading Considerations
+• **Volatility**: Cryptocurrency markets are highly volatile
+• **Research**: Always conduct thorough research before trading
+• **Risk Management**: Use appropriate position sizing and stop losses
+
+## Core Ecosystem Context
+${context ? `• Market Context: ${context}` : '• Current market data temporarily unavailable'}
+• **Bitcoin Security**: Benefits from Bitcoin's hash power security
+• **DeFi Integration**: Part of growing Core DeFi ecosystem
+
+*Note: This is a general analysis. For real-time AI insights, please ensure your Gemini API key is valid and up to date.*`;
     }
-    return 'Unable to retrieve token insights at this time. Please try again later.';
+    
+    // For other errors, return a simpler fallback
+    if (error instanceof Error) {
+      return `Unable to retrieve detailed token insights for ${symbol}. Error: ${error.message}. Please try again later or check your API configuration.`;
+    }
+    return `Unable to retrieve token insights for ${symbol} at this time. Please try again later.`;
   }
 }
 
@@ -144,8 +107,7 @@ export async function generateChatResponse(
   }
 
   try {
-    // Use v1beta endpoint with gemini-2.0-flash model
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Format chat history for context
     const formattedHistory = chatHistory.map(msg => 
@@ -172,48 +134,10 @@ export async function generateChatResponse(
       Respond in a helpful, concise manner. If suggesting portfolio changes, include specific allocation adjustments.
     `;
 
-    // Make the API request with retry logic
-    const response = await fetchWithRetry(
-      endpoint, 
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 800,
-          }
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Gemini API error:', errorData);
-      
-      // Handle different error codes
-      if (response.status === 503) {
-        throw new Error('Gemini API is temporarily unavailable. Please try again later.');
-      } else if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again in a few moments.');
-      } else {
-        throw new Error(`Gemini API request failed with status ${response.status}`);
-      }
-    }
-
-    const data = await response.json();
-    
-    // Check if we have valid data
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
-      throw new Error('Invalid response from Gemini API');
-    }
-    
-    const content = data.candidates[0].content.parts[0].text;
+    // Make the API request with the new SDK
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const content = response.text();
     
     // Parse for potential actions (portfolio adjustments)
     const action = parseActionFromResponse(content);
@@ -370,9 +294,6 @@ export async function generateWhaleAnalysis(transaction: WhaleTransaction): Prom
     throw new Error('Gemini API is not available');
   }
 
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent';
-
   const prompt = `
 You are a blockchain analyst specializing in whale transaction analysis for the Core Blockchain ecosystem. 
 Analyze this whale transaction and provide insights:
@@ -399,32 +320,10 @@ Keep your analysis factual and evidence-based. Mention if certain conclusions ar
 `;
 
   try {
-    const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Gemini API error:', errorData);
-      throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    return response.text();
   } catch (error) {
     console.error('Error generating whale analysis:', error);
     
@@ -450,5 +349,193 @@ Monitor ${transaction.tokenSymbol} price action over the next 24-48 hours for po
 
 *Note: This is a fallback analysis generated due to AI service unavailability. For more accurate insights, please try again later.*
 `;
+  }
+}
+
+/**
+ * Generate BTC staking analysis using Gemini API
+ */
+export async function generateStakingAnalysis(stakingData: {
+  latestRound: number;
+  activeValidatorCount: number;
+  coreStakerCount: number;
+  stakedCoreAmount: string;
+  btcStakerCount: number;
+  stakedBTCAmount: string;
+  hashStakerCount: number;
+  stakedHashAmount: string;
+}): Promise<string> {
+  if (!isGeminiAvailable()) {
+    throw new Error('Gemini API is not available');
+  }
+
+  // Calculate formatted values for analysis
+  const coreStaked = parseFloat(stakingData.stakedCoreAmount) / 1e18;
+  const btcStaked = parseFloat(stakingData.stakedBTCAmount) / 1e8;
+  const totalStakersCount = stakingData.coreStakerCount + stakingData.btcStakerCount + stakingData.hashStakerCount;
+
+  const prompt = `
+You are a DeFi and blockchain staking analyst specializing in the Core Blockchain ecosystem.
+Analyze the current BTC staking data and provide comprehensive trading insights:
+
+Current Staking Metrics:
+- Latest Round: #${stakingData.latestRound}
+- Active Validators: ${stakingData.activeValidatorCount}
+- Total CORE Staked: ${(coreStaked / 1e6).toFixed(2)}M CORE tokens
+- CORE Stakers: ${stakingData.coreStakerCount.toLocaleString()} participants
+- Total BTC Staked: ${btcStaked.toFixed(2)} BTC
+- BTC Stakers: ${stakingData.btcStakerCount.toLocaleString()} participants  
+- Hash Stakers: ${stakingData.hashStakerCount} with ${stakingData.stakedHashAmount} staked
+- Total Participants: ${totalStakersCount.toLocaleString()} across all staking types
+
+Please provide a comprehensive analysis including:
+
+## Market Analysis
+1. **Staking Health Assessment**: Overall network security and decentralization level
+2. **BTC Staking Significance**: Impact of ${btcStaked.toFixed(2)} BTC being staked on Core
+3. **Validator Economics**: Analysis of ${stakingData.activeValidatorCount} active validators
+4. **Participation Trends**: Insights on staker distribution and engagement
+
+## Trading Implications
+1. **CORE Token Demand**: How staking metrics affect CORE token price pressure
+2. **Yield Opportunities**: Staking rewards vs trading opportunities assessment
+3. **Market Sentiment**: What these numbers suggest about Core ecosystem adoption
+4. **Liquidity Impact**: How staked assets affect circulating supply
+
+## Strategic Recommendations
+1. **For CORE Holders**: Optimal staking vs trading strategies
+2. **For BTC Holders**: Bitcoin staking on Core vs traditional holding
+3. **Risk Assessment**: Validator concentration and slashing risks
+4. **Timing Considerations**: Best entry/exit points based on staking cycles
+
+## Future Outlook
+1. **Growth Projections**: Expected staking participation trends
+2. **Ecosystem Development**: Impact on Core blockchain adoption
+3. **Competitive Position**: How Core staking compares to other chains
+4. **Potential Catalysts**: Events that could drive staking growth
+
+Format your response in Markdown with clear headings and actionable insights.
+Focus on providing practical trading and investment guidance based on the staking data.
+Be specific about risks and opportunities while remaining objective.
+`;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    console.log('🚀 Requesting Gemini 2.0 Flash analysis...');
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+    
+    console.log('✅ Gemini 2.0 Flash analysis completed successfully');
+    return text;
+
+  } catch (error) {
+    console.error('Error generating staking analysis:', error);
+    
+    // Provide more helpful error messages based on error type
+    if (error instanceof Error && error.message.includes('429')) {
+      return `
+# Rate Limit Reached 🚦
+
+The AI analysis service is currently experiencing high demand. Please wait a few minutes before trying again.
+
+## Current Staking Overview (Live Data)
+
+**BTC Staking**: ${(btcStaked).toFixed(2)} BTC from ${stakingData.btcStakerCount.toLocaleString()} stakers
+
+**CORE Staking**: ${(coreStaked / 1e6).toFixed(2)}M CORE from ${stakingData.coreStakerCount.toLocaleString()} stakers
+
+**Network Status**: ${stakingData.activeValidatorCount} active validators in round #${stakingData.latestRound}
+
+## Quick Analysis
+
+With ${btcStaked.toFixed(2)} BTC staked on Core, this represents significant Bitcoin capital commitment to the ecosystem. The ${stakingData.btcStakerCount > 1000 ? 'strong' : 'growing'} participation from ${stakingData.btcStakerCount.toLocaleString()} BTC stakers indicates ${stakingData.btcStakerCount > 1000 ? 'excellent' : 'positive'} adoption.
+
+**Trading Implications**: High staking participation typically indicates bullish sentiment and reduced circulating supply pressure.
+
+*Please try the full AI analysis again in a few minutes.*
+        `;
+    } else {
+      // Fallback to a template response if the API fails
+      return `
+# Core Blockchain Staking Analysis
+
+## Market Overview
+The Core blockchain currently shows **strong staking participation** with ${(coreStaked / 1e6).toFixed(2)}M CORE tokens and ${btcStaked.toFixed(2)} BTC staked across the network.
+
+## Key Metrics Analysis
+
+### Network Security
+- **${stakingData.activeValidatorCount} Active Validators**: ${stakingData.activeValidatorCount < 20 ? 'Moderate centralization risk' : stakingData.activeValidatorCount < 50 ? 'Good decentralization' : 'Excellent decentralization'}
+- **Round #${stakingData.latestRound}**: Network operating consistently
+- **Multi-Asset Staking**: ${totalStakersCount.toLocaleString()} total participants across CORE, BTC, and Hash staking
+
+### BTC Staking Significance
+- **${btcStaked.toFixed(2)} BTC Staked**: Represents significant Bitcoin capital commitment to Core ecosystem
+- **${stakingData.btcStakerCount} BTC Stakers**: ${stakingData.btcStakerCount > 1000 ? 'Strong' : 'Growing'} adoption of Bitcoin staking
+- **Average Stake**: ~${(btcStaked / stakingData.btcStakerCount).toFixed(3)} BTC per staker
+
+## Trading Implications
+
+### CORE Token Dynamics
+- **Staking Demand**: ${(coreStaked / 1e6).toFixed(2)}M CORE locked reduces circulating supply
+- **Yield Competition**: Staking rewards compete with trading opportunities
+- **Long-term Bias**: High staking suggests holder confidence
+
+### Market Sentiment
+- **Ecosystem Growth**: ${stakingData.coreStakerCount > 100000 ? 'Excellent' : 'Good'} participation rate
+- **Cross-Chain Appeal**: BTC staking attracts Bitcoin holders to Core ecosystem
+- **Validator Health**: ${stakingData.activeValidatorCount > 30 ? 'Robust' : 'Developing'} validator network
+
+## Strategic Recommendations
+
+### For CORE Holders
+- **Consider Staking**: Current participation suggests attractive yields
+- **Monitor Unlock Cycles**: Plan around staking/unstaking periods
+- **Diversification**: Balance between staking rewards and trading flexibility
+
+### For BTC Holders  
+- **Yield Enhancement**: BTC staking offers additional yield on Bitcoin holdings
+- **Risk Assessment**: Evaluate smart contract risks vs yield benefits
+- **Timing**: Consider entry during lower staking participation for better rewards
+
+### Risk Factors
+- **Validator Concentration**: Monitor for centralization trends
+- **Slashing Risk**: Understand penalty mechanisms
+- **Liquidity**: Account for staking lock-up periods
+
+## Future Outlook
+- **Growing Adoption**: Increasing staker counts suggest positive trend
+- **Ecosystem Expansion**: BTC staking differentiates Core from other chains
+- **Yield Sustainability**: Monitor rewards vs inflation dynamics
+
+*Note: This is a fallback analysis. For more detailed insights, please ensure AI service availability.*
+
+## Strategic Recommendations
+
+### For CORE Holders
+- **Consider Staking**: Current participation suggests attractive yields
+- **Monitor Unlock Cycles**: Plan around staking/unstaking periods
+- **Diversification**: Balance between staking rewards and trading flexibility
+
+### For BTC Holders  
+- **Yield Enhancement**: BTC staking offers additional yield on Bitcoin holdings
+- **Risk Assessment**: Evaluate smart contract risks vs yield benefits
+- **Timing**: Consider entry during lower staking participation for better rewards
+
+### Risk Factors
+- **Validator Concentration**: Monitor for centralization trends
+- **Slashing Risk**: Understand penalty mechanisms
+- **Liquidity**: Account for staking lock-up periods
+
+## Future Outlook
+- **Growing Adoption**: Increasing staker counts suggest positive trend
+- **Ecosystem Expansion**: BTC staking differentiates Core from other chains
+- **Yield Sustainability**: Monitor rewards vs inflation dynamics
+
+*Note: This is a fallback analysis. For more detailed insights, please ensure AI service availability.*
+`;
+    }
   }
 }

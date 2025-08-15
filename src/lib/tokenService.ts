@@ -95,6 +95,44 @@ export const fetchTokenInsights = async (tokenSymbol: string): Promise<string> =
     return insights;
   } catch (error) {
     console.error('Error fetching token insights:', error);
+    
+    // Check if it's a Gemini API key error
+    if (error instanceof Error && (
+      error.message.includes('API key expired') || 
+      error.message.includes('API_KEY_INVALID') ||
+      error.message.includes('401') ||
+      error.message.includes('403')
+    )) {
+      // Return a structured fallback for API key issues
+      return `# ${tokenSymbol} Token Insights
+
+## ⚠️ AI Service Notice
+The AI analysis service is temporarily unavailable due to API configuration. Here's what we can provide:
+
+## Token Information
+• **Symbol**: ${tokenSymbol}
+• **Network**: Core Blockchain Ecosystem
+• **Type**: Digital Asset
+
+## General Analysis Framework
+• **Market Research**: Always verify current market conditions
+• **Risk Assessment**: Cryptocurrency investments carry significant risk
+• **Due Diligence**: Research the project's fundamentals and use cases
+
+## Core Blockchain Context
+• **Security**: Benefits from Bitcoin's proof-of-work security
+• **Innovation**: Part of the growing Core DeFi ecosystem
+• **Interoperability**: Designed for cross-chain functionality
+
+## Next Steps
+• Check official project documentation
+• Monitor community activity and development updates
+• Review trading volume and liquidity metrics
+• Consider market volatility in your investment strategy
+
+*To access full AI-powered insights, please ensure your Gemini API key is properly configured.*`;
+    }
+    
     return 'Unable to retrieve token insights at this time. Please try again later.';
   }
 };

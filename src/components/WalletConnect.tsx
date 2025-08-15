@@ -84,10 +84,10 @@ export function WalletConnect() {
     return (
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="glow-border">
-            <span className="px-2 py-0.5 rounded-lg bg-nebula-800 text-white mr-2">CORE</span>
-            <span className="font-roboto-mono">{formatAddress(address || '')}</span>
-            <ChevronDown className="ml-2 h-4 w-4" />
+          <Button variant="ghost" className="glow-border h-9 md:h-11 px-2 md:px-6 py-2 md:py-3">
+            <span className="px-1 md:px-2 py-0.5 rounded-md md:rounded-lg bg-nebula-800 text-white mr-1 md:mr-2 text-xs md:text-sm">CORE</span>
+            <span className="font-roboto-mono text-xs md:text-sm">{formatAddress(address || '')}</span>
+            <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
@@ -133,11 +133,12 @@ export function WalletConnect() {
   
   return (
     <Button 
-      className="bg-gradient-button hover:opacity-90 font-medium"
+      className="bg-gradient-button hover:opacity-90 font-medium h-9 md:h-11 px-3 md:px-6 text-xs md:text-sm"
       onClick={handleConnect}
     >
-      <Wallet className="mr-2 h-4 w-4" />
-      Connect Wallet
+      <Wallet className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+      <span className="hidden sm:inline">Connect Wallet</span>
+      <span className="sm:hidden">Connect</span>
     </Button>
   )
 }

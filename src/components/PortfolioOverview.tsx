@@ -12,6 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { modal } from '@/lib/appkit';
+import PremiumGoldLottie from '@/components/PremiumGoldLottie';
+import WorkplaceLottie from '@/components/WorkplaceLottie';
 
 const PortfolioOverview = () => {
   const { allocations, refreshAllocations } = useBlockchain();
@@ -49,40 +51,64 @@ const PortfolioOverview = () => {
   useEffect(() => {
     const fetchCorePrice = async () => {
       try {
-        const requestOptions = {
-          method: "GET",
-          redirect: "follow" as RequestRedirect
-        };
-
-        const response = await fetch("https://openapi.coredao.org/api/stats/last_core_price", requestOptions);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.status === "1" && result.result && result.result.coreusd) {
-          setCorePrice(parseFloat(result.result.coreusd));
-          console.log('Core price updated:', result.result.coreusd);
-        } else {
-          throw new Error(`API error: ${result.message || 'Unknown error'}`);
-        }
-      } catch (error) {
-        console.error('Error fetching Core price from official API:', error);
-        
-        // Fallback to CoinGecko if Core API fails
-        try {
-          const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=coredaoorg&vs_currencies=usd');
-          const data = await response.json();
-          if (data && data.coredaoorg && data.coredaoorg.usd) {
-            setCorePrice(data.coredaoorg.usd);
-            console.log('Using CoinGecko fallback price:', data.coredaoorg.usd);
+        // Try multiple price sources for better reliability
+        const priceApis = [
+          {
+            name: 'CoinGecko',
+            url: 'https://api.coingecko.com/api/v3/simple/price?ids=coredaoorg&vs_currencies=usd',
+            parser: (data: any) => data?.coredaoorg?.usd
+          },
+          {
+            name: 'CoinMarketCap Alternative',
+            url: 'https://api.coingecko.com/api/v3/coins/coredaoorg?vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false',
+            parser: (data: any) => data?.market_data?.current_price?.usd
+          },
+          {
+            name: 'Core DAO API',
+            url: 'https://openapi.coredao.org/api/stats/last_core_price',
+            parser: (data: any) => data?.status === "1" ? parseFloat(data?.result?.coreusd) : null
           }
-        } catch (fallbackError) {
-          console.error('Fallback price fetch also failed:', fallbackError);
-          // Keep default price
+        ];
+
+        for (const api of priceApis) {
+          try {
+            console.log(`Trying ${api.name} for Core price...`);
+            
+            const requestOptions = {
+              method: "GET",
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              redirect: "follow" as RequestRedirect
+            };
+
+            const response = await fetch(api.url, requestOptions);
+            
+            if (response.ok) {
+              const result = await response.json();
+              const price = api.parser(result);
+              
+              if (price && price > 0) {
+                setCorePrice(price);
+                console.log(`✅ Core price updated from ${api.name}:`, price);
+                return; // Success, exit the loop
+              }
+            } else {
+              console.warn(`⚠️ ${api.name} returned status: ${response.status}`);
+            }
+          } catch (apiError) {
+            console.warn(`⚠️ ${api.name} failed:`, apiError);
+            continue; // Try next API
+          }
         }
+        
+        // If all APIs fail, log warning but keep default price
+        console.warn('All price APIs failed, using default Core price');
+        
+      } catch (error) {
+        console.error('Error in fetchCorePrice function:', error);
+        // Keep default price
       }
     };
     
@@ -159,7 +185,26 @@ const PortfolioOverview = () => {
     <div className="space-y-8">
       {/* Main Portfolio Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2 card-glass hover:shadow-golden-glow transition-all duration-500">
+        <Card className="lg:col-span-2 card-glass hover:shadow-golden-glow transition-all duration-500 relative">
+          {/* Premium Gold Lottie Animation - Floating Top Right */}
+          <div className="absolute top-4 right-4 z-10">
+            <div className="relative group">
+              {/* Clean transparent container */}
+              <div className="relative group-hover:scale-105 transition-all duration-300">
+                <PremiumGoldLottie 
+                  width={140} 
+                  height={140} 
+                  className="" 
+                />
+              </div>
+              
+              {/* Sparkle effects */}
+              <div className="absolute top-2 right-2 w-1 h-1 bg-yellow-300 rounded-full animate-ping"></div>
+              <div className="absolute bottom-3 left-3 w-0.5 h-0.5 bg-yellow-400 rounded-full animate-pulse delay-300"></div>
+              <div className="absolute top-8 left-1 w-0.5 h-0.5 bg-yellow-200 rounded-full animate-pulse delay-700"></div>
+            </div>
+          </div>
+          
           <CardHeader className="pb-4">
             <CardTitle className="text-3xl font-playfair golden-text">Portfolio Overview</CardTitle>
             <CardDescription className="text-gold-200/70 font-inter">Total value across all Core DeFi categories</CardDescription>
@@ -296,20 +341,32 @@ const PortfolioOverview = () => {
             </div>
           </CardContent>
           <CardFooter>
-            {isConnected ? (
-              <ul className="w-full flex flex-wrap gap-2">
-                {portfolioData.map((item) => (
-                  <li key={item.name} className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-xs">{item.name}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="w-full text-center text-muted-foreground text-xs">
-                Connect your wallet to view your portfolio distribution
+            <div className="w-full flex flex-col space-y-4">
+              {/* Portfolio Legend */}
+              {isConnected ? (
+                <ul className="w-full flex flex-wrap gap-2">
+                  {portfolioData.map((item) => (
+                    <li key={item.name} className="flex items-center">
+                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-xs">{item.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="w-full text-center text-muted-foreground text-xs">
+                  Connect your wallet to view your portfolio distribution
+                </div>
+              )}
+              
+              {/* Workplace Lottie Animation */}
+              <div className="flex justify-center">
+                <WorkplaceLottie 
+                  width={450} 
+                  height={250} 
+                  className="rounded-lg" 
+                />
               </div>
-            )}
+            </div>
           </CardFooter>
         </Card>
       </div>

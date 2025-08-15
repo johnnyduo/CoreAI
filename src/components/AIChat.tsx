@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import AdjustmentModal from './AdjustmentModal';
+import AnimaBot from './AnimaBot';
 import { fetchTokenInsights } from '@/lib/tokenService';
 import { generateChatResponse, isGeminiAvailable } from '@/lib/geminiService';
 import { useAccount } from 'wagmi';
@@ -600,17 +601,19 @@ const AIChat = () => {
     <>
       <Card className="card-glass overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center">
-            <Bot className="mr-2 h-6 w-6 text-nebula-400" />
-            CoreAI Assistant
-          </CardTitle>
+          <div className="flex items-center">
+            <CardTitle className="text-2xl flex items-center">
+              <Bot className="mr-2 h-6 w-6 text-nebula-400" />
+              CoreAI Assistant
+            </CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <ScrollArea className="h-[400px] p-6" ref={scrollAreaRef}>
             <div className="space-y-4">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] ${msg.sender === 'user' ? 'bg-nebula-800' : 'bg-cosmic-700'} rounded-2xl p-4`}>
+                  <div className={`max-w-[80%] ${msg.sender === 'user' ? 'bg-nebula-800' : 'bg-cosmic-700'} rounded-2xl p-4 border border-yellow-500/30`}>
                     <div className="flex items-center mb-2">
                       <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
                         msg.sender === 'user' ? 'bg-nebula-600' : 'bg-gradient-nebula'
@@ -645,7 +648,7 @@ const AIChat = () => {
               ))}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-cosmic-700 rounded-2xl p-4 max-w-[80%]">
+                  <div className="bg-cosmic-700 rounded-2xl p-4 max-w-[80%] border border-yellow-500/30">
                     <div className="flex items-center">
                       <div className="h-8 w-8 rounded-full bg-gradient-nebula flex items-center justify-center">
                         <Bot className="h-4 w-4" />
@@ -653,9 +656,9 @@ const AIChat = () => {
                       <span className="ml-2 font-medium">CoreAI Assistant</span>
                     </div>
                     <div className="flex space-x-1 mt-2">
-                      <div className="h-2 w-2 bg-nebula-400 rounded-full animate-pulse"></div>
-                      <div className="h-2 w-2 bg-nebula-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="h-2 w-2 bg-nebula-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      <div className="h-2 w-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <div className="h-2 w-2 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="h-2 w-2 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                     </div>
                   </div>
                 </div>

@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   RefreshCw,
   Info,
-  Activity
+  Activity,
+  X
 } from 'lucide-react';
 import { 
   getWhaleTransactions as getExplorerWhaleTransactions, 
@@ -33,9 +34,7 @@ import {
   getMockWhaleTransactions,
   WhaleTransaction as CoreWhaleTransaction,
   formatCoreValue,
-  formatUSDValue,
-  getBTCStakingData,
-  BTCStakingData
+  formatUSDValue
 } from '@/lib/coreApiService';
 import { 
   getRecentWhaleTransactions,
@@ -45,7 +44,7 @@ import {
   getTimeAgo,
   ProcessedWhaleTransaction
 } from '@/lib/coreDAOService';
-import { generateWhaleAnalysis } from '@/lib/geminiService';
+import { generateWhaleAnalysis, generateStakingAnalysis } from '@/lib/geminiService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
@@ -55,6 +54,18 @@ type WhaleSize = 'small' | 'medium' | 'large' | 'mega';
 
 // Use both transaction types
 type WhaleTransaction = CoreWhaleTransaction | ProcessedWhaleTransaction;
+
+// Core staking data interface
+interface CoreStakingData {
+  latestRound: number;
+  activeValidatorCount: number;
+  coreStakerCount: number;
+  stakedCoreAmount: string;
+  btcStakerCount: number;
+  stakedBTCAmount: string;
+  hashStakerCount: number;
+  stakedHashAmount: string;
+}
 
 const WhaleTracker = () => {
   const [transactions, setTransactions] = useState<WhaleTransaction[]>([]);
@@ -75,10 +86,41 @@ const WhaleTracker = () => {
   const [isUsingRealData, setIsUsingRealData] = useState(false);
   const [corePrice, setCorePrice] = useState(1.20);
   
-  // BTC Staking state
-  const [btcStakingData, setBTCStakingData] = useState<BTCStakingData | null>(null);
-  const [isLoadingBTCStaking, setIsLoadingBTCStaking] = useState(false);
-  const [btcStakingError, setBTCStakingError] = useState<string | null>(null);
+  // Core staking data state
+  const [stakingData, setStakingData] = useState<any>(null);
+  const [isLoadingStaking, setIsLoadingStaking] = useState(true);
+  const [stakingAnalysis, setStakingAnalysis] = useState<string>('');
+  const [isAnalyzingStaking, setIsAnalyzingStaking] = useState(false);
+
+  // Fetch Core staking data
+  const fetchStakingData = async () => {
+    try {
+      setIsLoadingStaking(true);
+      const myHeaders = new Headers();
+      myHeaders.append("Accept", "application/json");
+
+      const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+      };
+
+      const response = await fetch("https://staking-api.coredao.org/staking/summary/overall", requestOptions);
+      const result = await response.json();
+      
+      if (result.code === "00000" && result.data) {
+        setStakingData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching staking data:', error);
+    } finally {
+      setIsLoadingStaking(false);
+    }
+  };
+
+  // Fetch staking data on component mount
+  useEffect(() => {
+    fetchStakingData();
+  }, []);
 
   // Fetch top tokens
   useEffect(() => {
@@ -93,30 +135,6 @@ const WhaleTracker = () => {
     };
     
     fetchTokens();
-  }, []);
-
-  // Fetch BTC staking data
-  useEffect(() => {
-    const fetchBTCStakingData = async () => {
-      setIsLoadingBTCStaking(true);
-      setBTCStakingError(null);
-      
-      try {
-        const stakingData = await getBTCStakingData();
-        setBTCStakingData(stakingData);
-      } catch (error) {
-        console.error('Error fetching BTC staking data:', error);
-        setBTCStakingError('Failed to fetch BTC staking data');
-      } finally {
-        setIsLoadingBTCStaking(false);
-      }
-    };
-    
-    fetchBTCStakingData();
-    
-    // Refresh BTC staking data every 10 minutes
-    const intervalId = setInterval(fetchBTCStakingData, 600000);
-    return () => clearInterval(intervalId);
   }, []);
 
   // Fetch token info when token filter changes
@@ -284,6 +302,28 @@ const WhaleTracker = () => {
     }
   };
 
+  // Utility functions for formatting staking values
+  const formatStakedCORE = (value: string) => {
+    const numValue = parseFloat(value) / 1e18; // Convert from wei to CORE
+    if (numValue >= 1000000) {
+      return `${(numValue / 1000000).toFixed(2)}M CORE`;
+    }
+    if (numValue >= 1000) {
+      return `${(numValue / 1000).toFixed(2)}K CORE`;
+    }
+    return `${numValue.toFixed(2)} CORE`;
+  };
+
+  const formatStakedBTC = (value: string) => {
+    const numValue = parseFloat(value) / 1e8; // Convert from satoshis to BTC
+    return `${numValue.toFixed(4)} BTC`;
+  };
+
+  const formatStakedHash = (value: string) => {
+    const numValue = parseFloat(value);
+    return `${numValue.toFixed(0)} TH/s`;
+  };
+
   const handleAnalyzeTransaction = async (transaction: WhaleTransaction) => {
     // Create a copy with valid age if missing and transform to expected format
     const txWithValidTimestamp = {
@@ -309,6 +349,22 @@ const WhaleTracker = () => {
       setAiAnalysis('Failed to generate analysis. The AI service may be temporarily unavailable. Please try again later.');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  // Handle AI analysis of staking data
+  const handleStakingAnalysis = async () => {
+    if (!stakingData) return;
+    
+    setIsAnalyzingStaking(true);
+    try {
+      const analysis = await generateStakingAnalysis(stakingData);
+      setStakingAnalysis(analysis);
+    } catch (error) {
+      console.error('Error generating staking analysis:', error);
+      setStakingAnalysis('Failed to generate analysis. Please try again.');
+    } finally {
+      setIsAnalyzingStaking(false);
     }
   };
 
@@ -400,6 +456,237 @@ const WhaleTracker = () => {
 
   return (
     <div className="space-y-6">
+      {/* Core Blockchain Staking Overview */}
+      <Card className="card-glass">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-xl text-gold-400 flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Core Blockchain Staking Overview
+              </CardTitle>
+              <CardDescription className="text-gold-200/60">
+                Real-time staking statistics from Core Blockchain
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchStakingData}
+                disabled={isLoadingStaking}
+                className="border-gold-600/20 text-gold-400 hover:bg-gold-400/10 transition-all duration-200 hover:border-gold-500/30"
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${isLoadingStaking ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStakingAnalysis}
+                disabled={isAnalyzingStaking || !stakingData}
+                className="border-gradient-to-r from-purple-600/30 to-blue-600/30 bg-gradient-to-r from-purple-900/20 to-blue-900/20 text-purple-300 hover:from-purple-800/30 hover:to-blue-800/30 hover:text-purple-200 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Bot className={`h-4 w-4 mr-2 ${isAnalyzingStaking ? 'animate-pulse text-purple-400' : 'text-purple-300'}`} />
+                {isAnalyzingStaking ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-pulse">AI Analyzing...</span>
+                    <div className="flex gap-1">
+                      <div className="w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                      <div className="w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                      <div className="w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                    </div>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <span>BTC Staking Analysis</span>
+                    <span className="text-xs px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30">AI</span>
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingStaking ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array(4).fill(null).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-full bg-gold-400/10" />
+                  <Skeleton className="h-8 w-full bg-gold-400/10" />
+                  <Skeleton className="h-3 w-2/3 bg-gold-400/10" />
+                </div>
+              ))}
+            </div>
+          ) : stakingData ? (
+            <div className="space-y-6">
+              {/* Staking Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Latest Round Card */}
+                <div className="group bg-gradient-to-br from-gold-900/30 to-gold-800/20 p-6 rounded-xl border border-gold-600/30 hover:border-gold-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-gold-500/20 backdrop-blur-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-medium text-gold-400">Latest Round</div>
+                    <div className="w-8 h-8 rounded-lg bg-gold-500/20 flex items-center justify-center group-hover:bg-gold-500/30 transition-colors">
+                      <Activity className="h-4 w-4 text-gold-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-gold-200 mb-1">#{stakingData.latestRound?.toLocaleString()}</div>
+                  <div className="text-xs text-gold-300/70">Current staking round</div>
+                  <div className="mt-3 h-1 bg-gold-600/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-gold-500 to-gold-400 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                  </div>
+                </div>
+                
+                {/* Active Validators Card */}
+                <div className="group bg-gradient-to-br from-blue-900/30 to-blue-800/20 p-6 rounded-xl border border-blue-600/30 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/20 backdrop-blur-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-medium text-blue-400">Active Validators</div>
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                      <Bot className="h-4 w-4 text-blue-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-blue-200 mb-1">{stakingData.activeValidatorCount}</div>
+                  <div className="text-xs text-blue-300/70">Securing the network</div>
+                  <div className="mt-3 flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-blue-300/80">Network healthy</span>
+                  </div>
+                </div>
+                
+                {/* CORE Staked Card */}
+                <div className="group bg-gradient-to-br from-green-900/30 to-green-800/20 p-6 rounded-xl border border-green-600/30 hover:border-green-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/20 backdrop-blur-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-medium text-green-400">CORE Staked</div>
+                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                      <ArrowUpRight className="h-4 w-4 text-green-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-green-200 mb-1">{formatStakedCORE(stakingData.stakedCoreAmount)}</div>
+                  <div className="text-xs text-green-300/70 mb-2">{stakingData.coreStakerCount?.toLocaleString()} stakers</div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded-full border border-green-500/30">
+                      High Participation
+                    </span>
+                  </div>
+                </div>
+                
+                {/* BTC Staked Card */}
+                <div className="group bg-gradient-to-br from-orange-900/30 to-orange-800/20 p-6 rounded-xl border border-orange-600/30 hover:border-orange-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/20 backdrop-blur-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-medium text-orange-400">BTC Staked</div>
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/30 transition-colors">
+                      <Activity className="h-4 w-4 text-orange-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-orange-200 mb-1">{formatStakedBTC(stakingData.stakedBTCAmount)}</div>
+                  <div className="text-xs text-orange-300/70 mb-2">{stakingData.btcStakerCount?.toLocaleString()} BTC stakers</div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full border border-orange-500/30">
+                      Cross-Chain
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hash Power Section */}
+              {stakingData.stakedHashAmount && (
+                <div className="group bg-gradient-to-br from-purple-900/30 to-purple-800/20 p-6 rounded-xl border border-purple-600/30 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20 backdrop-blur-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                        <Activity className="h-5 w-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <div className="text-base font-medium text-purple-400">Hash Power Staked</div>
+                        <div className="text-xs text-purple-300/70">{stakingData.hashStakerCount} miners contributing</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-purple-200">{formatStakedHash(stakingData.stakedHashAmount)}</div>
+                      <div className="flex items-center gap-1 justify-end mt-1">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-purple-300/80">Mining active</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-purple-600/10 rounded-lg p-3 border border-purple-500/20">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-purple-300/80">Network Hashrate Contribution</span>
+                      <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30">
+                        {((parseFloat(stakingData.stakedHashAmount) / 1000) * 100).toFixed(1)}% of network
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Analysis Section */}
+              {stakingAnalysis && (
+                <div className="bg-gradient-to-br from-cosmic-900/40 to-cosmic-800/20 rounded-xl border border-cosmic-500/20 shadow-2xl backdrop-blur-sm">
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-4 border-b border-cosmic-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30">
+                        <Bot className="h-5 w-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-cosmic-200">AI BTC Staking Analysis</h3>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-medium">Powered by Gemini</span>
+                          <span className="text-xs text-cosmic-400 flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            Live Analysis
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setStakingAnalysis('')}
+                      className="text-cosmic-400 hover:text-cosmic-200 hover:bg-cosmic-700/30"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Scrollable Content */}
+                  <div className="max-h-96 overflow-y-auto p-4 custom-scrollbar">
+                    <div className="prose prose-sm prose-invert max-w-none">
+                      <div className="text-sm text-cosmic-200 whitespace-pre-wrap leading-relaxed">{stakingAnalysis}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="px-4 py-3 bg-cosmic-800/30 rounded-b-xl border-t border-cosmic-500/20">
+                    <div className="flex items-center justify-between text-xs text-cosmic-400">
+                      <span>Analysis generated at {new Date().toLocaleTimeString()}</span>
+                      <span className="flex items-center gap-1">
+                        <Activity className="h-3 w-3" />
+                        Real-time Core Blockchain data
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gold-300/60">
+              <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>Failed to load staking data</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchStakingData}
+                className="mt-3 border-gold-600/20 text-gold-400 hover:bg-gold-400/10"
+              >
+                Try Again
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -841,109 +1128,6 @@ const WhaleTracker = () => {
             </div>
           </CardFooter>
         </Card>
-      </div>
-
-      {/* BTC Staking Analytics Section */}
-      <Card className="bg-gradient-to-br from-amber-950/20 to-orange-900/20 border-amber-500/20 card-glass">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-amber-100">
-            <Activity className="h-5 w-5 text-amber-500" />
-            Bitcoin Staking Analytics
-            <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-300 border-amber-500/30">
-              Satoshi Plus
-            </Badge>
-          </CardTitle>
-          <CardDescription className="text-amber-200/70">
-            Real-time Core DAO Bitcoin staking metrics and whale activity analysis
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingBTCStaking ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-              <span className="ml-2 text-amber-200">Loading BTC staking data...</span>
-            </div>
-          ) : btcStakingError ? (
-            <div className="text-red-400 p-4 border border-red-500/20 rounded-lg bg-red-950/20">
-              <AlertTriangle className="h-4 w-4 inline mr-2" />
-              {btcStakingError}
-            </div>
-          ) : btcStakingData ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-amber-900/30 to-yellow-900/30 p-4 rounded-lg border border-amber-500/20">
-                <div className="text-sm text-amber-300/70 mb-1">Total BTC Staked</div>
-                <div className="text-2xl font-bold text-amber-100">
-                  {btcStakingData.btcStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} BTC
-                </div>
-                <div className="text-xs text-amber-300/50">
-                  ≈ ${(btcStakingData.totalValueUSD / 1000000).toFixed(1)}M USD
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 p-4 rounded-lg border border-green-500/20">
-                <div className="text-sm text-green-300/70 mb-1">Average APY</div>
-                <div className="text-2xl font-bold text-green-100">
-                  {btcStakingData.averageAPY.toFixed(2)}%
-                </div>
-                <div className="text-xs text-green-300/50">
-                  Current yield rate
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 p-4 rounded-lg border border-blue-500/20">
-                <div className="text-sm text-blue-300/70 mb-1">Validators</div>
-                <div className="text-2xl font-bold text-blue-100">
-                  {btcStakingData.validatorCount.toLocaleString()}
-                </div>
-                <div className="text-xs text-blue-300/50">
-                  {btcStakingData.delegatorCount.toLocaleString()} delegators
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/30 p-4 rounded-lg border border-purple-500/20">
-                <div className="text-sm text-purple-300/70 mb-1">Staking Score</div>
-                <div className="text-2xl font-bold text-purple-100">
-                  {btcStakingData.stakingScore.toFixed(1)}
-                </div>
-                <div className="text-xs text-purple-300/50">
-                  Network health metric
-                </div>
-              </div>
-
-              <div className="md:col-span-2 lg:col-span-4 bg-gradient-to-br from-gray-900/50 to-slate-800/50 p-4 rounded-lg border border-gray-500/20">
-                <div className="text-sm text-gray-300 mb-3 flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Staking Distribution
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">Validator Staked</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {btcStakingData.validatorStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} BTC
-                    </div>
-                    <Progress 
-                      value={(btcStakingData.validatorStaked / btcStakingData.btcStaked) * 100} 
-                      className="mt-2 h-2 bg-gray-800"
-                    />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">Delegator Staked</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {btcStakingData.delegatorStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} BTC
-                    </div>
-                    <Progress 
-                      value={(btcStakingData.delegatorStaked / btcStakingData.btcStaked) * 100} 
-                      className="mt-2 h-2 bg-gray-800"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
         <Card className="card-glass">
           <CardHeader>
@@ -974,7 +1158,7 @@ const WhaleTracker = () => {
                 </p>
               </div>
             ) : (
-              <div className="h-[400px] overflow-auto pr-2">
+              <div className="h-[400px] overflow-auto pr-2 custom-scrollbar">
                 <div className="prose prose-invert max-w-none">
                   {aiAnalysis.split('\n').map((line, index) => {
                     if (line.startsWith('# ')) {

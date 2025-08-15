@@ -96,20 +96,20 @@ const DashboardHeader = () => {
         {/* Golden accent line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-golden"></div>
         
-        <div className="flex items-center justify-between py-6 px-8">
+        <div className="flex items-center justify-between py-3 md:py-6 px-4 md:px-8">
           {/* Logo Section */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <div className="relative">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-golden flex items-center justify-center shadow-golden-glow animate-golden-pulse">
-                <Crown className="h-7 w-7 text-charcoal-900" />
+              <div className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-gradient-golden flex items-center justify-center shadow-golden-glow animate-golden-pulse">
+                <Crown className="h-5 w-5 md:h-7 md:w-7 text-charcoal-900" />
               </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gold-400 rounded-full flex items-center justify-center">
-                <Zap className="h-2 w-2 text-charcoal-900" />
+              <div className="absolute -top-0.5 -right-0.5 md:-top-1 md:-right-1 w-3 h-3 md:w-4 md:h-4 bg-gold-400 rounded-full flex items-center justify-center">
+                <Zap className="h-1.5 w-1.5 md:h-2 md:w-2 text-charcoal-900" />
               </div>
             </div>
             <div>
-              <h1 className="text-4xl font-playfair font-bold golden-text">CoreAI</h1>
-              <p className="text-xs font-inter text-gold-300/60 mt-1">Premium DeFi Portfolio Navigator</p>
+              <h1 className="text-2xl md:text-4xl font-playfair font-bold golden-text">CoreAI</h1>
+              <p className="text-xs font-inter text-gold-300/60 mt-0.5 md:mt-1 hidden sm:block">AI-powered DeFi navigator for Core</p>
             </div>
           </div>
           
@@ -182,7 +182,7 @@ const DashboardHeader = () => {
           </div>
 
           {/* Mobile Navigation */}
-          <div className="flex md:hidden items-center space-x-3">
+          <div className="flex md:hidden items-center space-x-2">
             {/* Wallet Connect button always visible */}
             <div>
               <WalletConnect />
@@ -193,11 +193,11 @@ const DashboardHeader = () => {
               <SheetTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  size="lg" 
-                  className="p-3 bg-charcoal-800/60 backdrop-blur-xl border border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300"
+                  size="sm" 
+                  className="p-2 bg-charcoal-800/60 backdrop-blur-xl border border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300"
                   aria-label="Menu"
                 >
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] bg-charcoal-900/95 backdrop-blur-xl border-golden-border">
