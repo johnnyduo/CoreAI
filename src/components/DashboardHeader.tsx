@@ -5,7 +5,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { coreTestnet } from '@/lib/chains';
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import AIDocumentation from '@/components/AIDocumentation';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -221,6 +222,9 @@ const DashboardHeader = () => {
       {/* AI Documentation Modal */}
       <Dialog open={showAIDocumentation} onOpenChange={setShowAIDocumentation}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
+          <VisuallyHidden>
+            <DialogTitle>AI System Documentation</DialogTitle>
+          </VisuallyHidden>
           <div className="text-sm md:text-base leading-relaxed">
             <AIDocumentation />
           </div>
