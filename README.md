@@ -981,6 +981,7 @@ For questions, feedback, or contributions, please open an issue or contact the m
 Try CoreAI: [https://coreai-project.vercel.app/](https://coreai-project.vercel.app/)
 
 ## Screenshots
+<img width="3456" height="4792" alt="image" src="https://github.com/user-attachments/assets/b8b04a52-b25d-4f24-a90a-d11f49fd391a" />
 
 
 ## Team
