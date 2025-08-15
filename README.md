@@ -37,6 +37,8 @@ CoreAI is a next-generation Web3 application that combines artificial intelligen
 - **On-Chain Data**: Core Explorer API for blockchain analytics
 - **Whale Tracking**: Custom algorithms for large transaction monitoring
 
+<img width="1709" height="908" alt="Screenshot 2568-08-15 at 21 30 38" src="https://github.com/user-attachments/assets/6cf9d0c9-a4be-426e-9d94-8df02f90ce98" />
+
 ## ✨ Core Features
 
 ### 🤖 **AI-Powered Portfolio Intelligence**
@@ -46,6 +48,8 @@ CoreAI is a next-generation Web3 application that combines artificial intelligen
 - **Risk Assessment**: Intelligent risk profiling and mitigation strategies
 - **Token Insights Generation**: AI-powered analysis for individual tokens with technical indicators
 - **Context-Aware Responses**: Chat system with portfolio context and historical data
+
+<img width="3456" height="2032" alt="image" src="https://github.com/user-attachments/assets/2ea47edd-a4dd-44f9-8a2e-c190734d3b83" />
 
 ### 📊 **Advanced Analytics Dashboard**
 - **Real-Time Portfolio Tracking**: Live performance metrics and P&L calculations
@@ -64,9 +68,6 @@ CoreAI is a next-generation Web3 application that combines artificial intelligen
 - **AI-Powered Transaction Analysis**: Gemini AI analysis of whale movements and market impact
 - **Transaction Pattern Recognition**: Identify and analyze transaction patterns for market insights
 - **Real-Time Whale Alerts**: Live monitoring of significant transactions with instant notifications
-
-![Uploading Screenshot 2568-08-15 at 21.25.56.png…]()
-
 
 ### 🔗 **BTC Staking Intelligence & Core Network Integration**
 - **Core Staking Analytics**: Real-time BTC staking data from Core DAO
@@ -275,6 +276,9 @@ CoreAI/
 │   └── USDC.sol
 └── dist/                   # Production build
 ```
+
+<img width="3456" height="5344" alt="image" src="https://github.com/user-attachments/assets/48ecca43-de37-4fbf-94b1-faedd0d9bb03" />
+
 
 ## 🔗 Smart Contract Verification
 
