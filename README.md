@@ -519,19 +519,20 @@ export const fetchCustomData = async (params: CustomParams) => {
 
 ### Q3 2025 ✅
 - [x] MVP development and Core Blockchain integration
-- [x] AI chat interface with Gemini 2.5 Pro
-- [x] Portfolio management with smart contracts
-- [x] Whale tracking and analytics dashboard
+- [x] AI agent chat interface with Gemini 2.5 Pro
+- [x] Portfolio management with smart contracts and AI
+- [x] Whale tracking and AI-powered analytics dashboard
 
 ### Q4 2025 🔄
 - [ ] **Enhanced AI Features**
   - [ ] Predictive market modeling
   - [ ] Risk assessment algorithms
   - [ ] Automated rebalancing strategies
-- [ ] **Mobile Application**
-  - [ ] React Native mobile app
-  - [ ] Push notifications for whale alerts
-  - [ ] Mobile-optimized trading interface
+- [ ] **ElizaOS Integration**
+  - [ ] AI agent framework integration with ElizaOS
+  - [ ] Multi-modal AI interactions (text, voice, vision)
+  - [ ] Autonomous trading agent capabilities
+  - [ ] Cross-platform AI agent deployment
 
 ### Q1 2026 🎯
 - [ ] **Cross-Chain Integration**
@@ -610,22 +611,6 @@ yarn build
 # 4. Submit a pull request
 git push origin feature/your-amazing-feature
 ```
-
-#### **Bug Reports**
-When reporting bugs, please include:
-- **Environment**: OS, browser, wallet type
-- **Steps to Reproduce**: Detailed reproduction steps
-- **Expected Behavior**: What should happen
-- **Actual Behavior**: What actually happens
-- **Screenshots**: Visual evidence if applicable
-
-#### **Feature Requests**
-For new features, please provide:
-- **Use Case**: Why is this feature needed?
-- **Proposed Solution**: How should it work?
-- **Alternatives**: Other ways to solve the problem
-- **Implementation**: Technical considerations
-
 ## 📚 Resources & References
 
 ### Essential Reading
@@ -672,9 +657,9 @@ SOFTWARE.
 
 <div align="center">
 
-**[🌐 Live Demo](https://coreai.xyz)** • **[📖 Documentation](./docs)** • **[🔧 API Reference](./docs/api)** • **[🚀 Deploy Guide](./docs/deployment)**
+**[🌐 Live Demo](https://coreai-project.vercel.app/)** 
 
-Made with ❤️ by the CoreAI team and the open-source community
+Made with ❤️ by the CoreAI team
 
 **Powered by Core Blockchain • Enhanced by AI • Built for the Future**
 
