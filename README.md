@@ -9,7 +9,7 @@
 
 > **AI-Powered DeFi Portfolio Navigator for Core Blockchain Network**
 
-<p align="center">![6711bb28-15c4-435f-9b08-3dd739e5686d](https://github.com/user-attachments/assets/717b6f47-7fdf-45c2-be35-3ced8da3363c)</p>
+<p align="center"><img width="100%" height="100%" alt="Screenshot 2568-08-15 at 21 25 11" src="https://github.com/user-attachments/assets/717b6f47-7fdf-45c2-be35-3ced8da3363c" /></p>
 
 CoreAI is a next-generation Web3 application that combines artificial intelligence with decentralized finance to deliver intelligent portfolio management on Core Blockchain. Built with cutting-edge Web3 technologies and powered by Google Gemini AI, it provides real-time market analysis, on-chain insights, and conversational AI interfaces for sophisticated DeFi strategies.
 
