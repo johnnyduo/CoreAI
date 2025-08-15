@@ -978,10 +978,10 @@ For questions, feedback, or contributions, please open an issue or contact the m
 
 ## Demo
 
-Try CoreAI: [https://coreai.xyz](https://coreai.xyz)
+Try CoreAI: [https://coreai-project.vercel.app/](https://coreai-project.vercel.app/)
 
 ## Screenshots
-![CoreAI Dashboard](https://github.com/user-attachments/assets/1c55d6c2-a148-45a3-a9e2-ed7b0be309dd)
+
 
 ## Team
 
@@ -1002,20 +1002,20 @@ For a detailed walkthrough, see our [User Guide](link-to-guide).
 
 ## Roadmap
 
-- Q2 2025: 
+- Q3 2025: 
 MVP development
 AI integration with Gemini 2.5 Pro
 Core Blockchain testnet deployment
 Initial user testing
 
-- Q3 2025: 
+- Q4 2025: 
 ElizaOS Plugin Hybrid
 Enhanced data visualization
 Additional DeFi protocol integrations
 Advanced whale tracking features
 Mobile support
 
-- Q4 2025: 
+- Q1 2026: 
 Mainnet deployment
 Multi-chain expansion (Cross-chain)
 Institutional-grade features
