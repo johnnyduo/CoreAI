@@ -298,10 +298,10 @@ class CoreAIEngine:
 ### Data Sources & Infrastructure
 
 #### Blockchain Data Aggregation
-- **Core Explorer API**: Real-time blockchain data including transactions, smart contract events, validator performance, and Bitcoin staking statistics
+- **Core Explorer API**: Real-time blockchain data including transactions, smart contract events, validator performance, and Bitcoin staking statistics via [Core DAO API Documentation](https://docs.coredao.org/docs/intro)
 - **Glyph Exchange V4 Subgraph**: GraphQL endpoint for comprehensive DEX data including liquidity pool metrics, trading volumes, and yield farming rewards
 - **Bitcoin Network Integration**: SPV proof verification for Bitcoin staking validation and cross-chain state synchronization
-- **Validator Network Monitoring**: Real-time tracking of Core's 21 validator nodes, their performance metrics, and delegation statistics
+- **Validator Network Monitoring**: Real-time tracking of Core's 21 validator nodes, their performance metrics, and delegation statistics through Core DAO's official API infrastructure
 
 #### Market Data Infrastructure
 ```typescript
@@ -508,13 +508,32 @@ VITE_GLYPH_ROUTER_ADDRESS=0x...  # Glyph V4 Router Contract
    # Copy Project ID to VITE_WALLET_CONNECT_PROJECT_ID
    ```
 
-3. **Core API Access**
+3. **Core API Access & Documentation**
    ```bash
-   # For Core blockchain data access
-   # Visit Core Developer Portal
+   # For Core blockchain data access and API integration
+   # Visit Core DAO Documentation Portal
+   open https://docs.coredao.org/docs/intro
+   
+   # Access comprehensive API documentation
    open https://docs.coredao.org/api
-   # Generate API key for enhanced rate limits
+   
+   # Generate API key for enhanced rate limits and data access
+   # Provides access to:
+   # - Real-time blockchain data
+   # - Bitcoin staking statistics  
+   # - Validator performance metrics
+   # - Transaction history and smart contract events
+   # - Core network analytics and DeFi protocols
    ```
+
+   **Core DAO API Integration Features:**
+   - **Blockchain Data**: Real-time access to Core testnet/mainnet data
+   - **Staking Analytics**: Bitcoin staking rewards, validator performance, delegation stats
+   - **DeFi Metrics**: DEX volumes, liquidity pools, yield farming opportunities
+   - **Network Stats**: Block production, consensus metrics, network health
+   - **Developer Tools**: Smart contract interaction, event monitoring, transaction broadcasting
+   
+   > 📖 **Documentation**: CoreAI leverages the comprehensive [Core DAO API documentation](https://docs.coredao.org/docs/intro) for blockchain data retrieval, ensuring reliable access to Core network metrics, Bitcoin staking information, and DeFi protocol analytics.
 
 ### Network Setup
 
