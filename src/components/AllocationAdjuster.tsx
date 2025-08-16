@@ -149,7 +149,7 @@ const AllocationAdjuster = () => {
           Reset
         </Button>
         <Button 
-          className="bg-gradient-button hover:opacity-90" 
+          className="bg-gradient-golden hover:bg-gradient-golden-dark text-charcoal-900 hover:text-charcoal-900 font-medium border border-gold-400 hover:border-gold-300 shadow-md hover:shadow-golden-glow transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" 
           onClick={handleApplyChanges} 
           disabled={!hasChanges || total !== 100 || isUpdatingAllocations}
         >

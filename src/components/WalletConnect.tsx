@@ -84,8 +84,8 @@ export function WalletConnect() {
     return (
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="glow-border h-9 md:h-11 px-2 md:px-6 py-2 md:py-3">
-            <span className="px-1 md:px-2 py-0.5 rounded-md md:rounded-lg bg-nebula-800 text-white mr-1 md:mr-2 text-xs md:text-sm">CORE</span>
+          <Button variant="outline" className="bg-charcoal-800/60 border-golden-border hover:bg-gradient-golden hover:text-charcoal-900 text-gold-200 transition-all duration-300 hover:shadow-golden-glow hover:scale-105 h-9 md:h-11 px-2 md:px-6 py-2 md:py-3">
+            <span className="px-1 md:px-2 py-0.5 rounded-md md:rounded-lg bg-gold-600 text-charcoal-900 mr-1 md:mr-2 text-xs md:text-sm font-medium">CORE</span>
             <span className="font-roboto-mono text-xs md:text-sm">{formatAddress(address || '')}</span>
             <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4" />
           </Button>
@@ -133,7 +133,7 @@ export function WalletConnect() {
   
   return (
     <Button 
-      className="bg-gradient-button hover:opacity-90 font-medium h-9 md:h-11 px-3 md:px-6 text-xs md:text-sm"
+      className="bg-gradient-golden hover:bg-gradient-golden-dark font-medium h-9 md:h-11 px-3 md:px-6 text-xs md:text-sm text-charcoal-900 hover:text-charcoal-900 border border-gold-400 hover:border-gold-300 shadow-md hover:shadow-golden-glow transition-all duration-300 hover:scale-105"
       onClick={handleConnect}
     >
       <Wallet className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
